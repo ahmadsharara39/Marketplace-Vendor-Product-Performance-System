@@ -1,5 +1,6 @@
 REPORT.md
 AI_management_summary.txt
+ONBOARDING_REQUIREMENTS.md
 table_top_vendors_by_net_revenue.csv
 table_top_vendors_by_conversion.csv
 table_underperforming_vendors.csv
