@@ -85,13 +85,27 @@ if prompt:
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Retrieving and answering..."):
-            out, contexts = answer(prompt)
-            st.markdown(out)
+        # Check if user is asking about adding vendor or product
+        prompt_lower = prompt.lower()
+        if any(keyword in prompt_lower for keyword in ["add vendor", "add product", "add a vendor", "add a product", "new vendor", "new product", "how to add"]):
+            st.markdown("""
+I see you want to add a vendor or product! 
 
-            with st.expander("Sources used"):
-                for i, c in enumerate(contexts, start=1):
-                    st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
-                    st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
+**👈 Use the sidebar on the left** to access the "➕ Add Data to CSV" forms:
 
-    st.session_state.messages.append({"role": "assistant", "content": out})
+- **Add Vendor Tab**: Fill in vendor ID, tier, region, and quality score → blank cells ready for input
+- **Add Product Tab**: Fill in all product details → blank cells ready for input
+
+The forms will automatically save your data to the CSV files.
+            """)
+        else:
+            with st.spinner("Retrieving and answering..."):
+                out, contexts = answer(prompt)
+                st.markdown(out)
+
+                with st.expander("Sources used"):
+                    for i, c in enumerate(contexts, start=1):
+                        st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
+                        st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
+
+    st.session_state.messages.append({"role": "assistant", "content": ""})
