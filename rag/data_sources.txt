@@ -7,3 +7,4 @@ table_category_performance.csv
 table_high_views_low_orders_products.csv
 ai_discount_recommendations.csv
 ai_vendor_promotion_recommendations.csv
+vendors_master.csv
