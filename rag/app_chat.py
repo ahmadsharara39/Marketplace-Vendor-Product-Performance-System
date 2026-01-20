@@ -68,6 +68,9 @@ with st.sidebar:
                 else:
                     st.error("Please fill in all required fields")
 
+st.divider()
+st.info("💡 **To add a new vendor or product:** Use the '➕ Add Data to CSV' forms in the sidebar on the left. You'll see blank cells to fill in.")
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
