@@ -14,15 +14,15 @@ with st.sidebar:
     
     with tab1:
         st.subheader("Add New Vendor")
-        with st.form("vendor_form"):
-            vendor_id = st.text_input("Vendor ID (e.g., V050)", placeholder="V").upper()
+        with st.form("vendor_form", clear_on_submit=True):
+            vendor_id = st.text_input("Vendor ID (e.g., V050)")
             vendor_tier = st.selectbox("Vendor Tier", ["Bronze", "Silver", "Gold"])
             vendor_region = st.selectbox("Vendor Region", ["Levant", "GCC", "Europe", "North Africa", "Asia"])
             vendor_quality_score = st.slider("Quality Score", -2.0, 2.0, 0.0, 0.1)
             
             if st.form_submit_button("Add Vendor", use_container_width=True):
                 if vendor_id and len(vendor_id) > 1:
-                    result = add_vendor(vendor_id, vendor_tier, vendor_region, vendor_quality_score)
+                    result = add_vendor(vendor_id.upper(), vendor_tier, vendor_region, vendor_quality_score)
                     if result["success"]:
                         st.success(result["message"])
                     else:
@@ -32,35 +32,35 @@ with st.sidebar:
     
     with tab2:
         st.subheader("Add New Product")
-        with st.form("product_form"):
+        with st.form("product_form", clear_on_submit=True):
             col1, col2 = st.columns(2)
             with col1:
                 date = st.date_input("Date")
-                product_id = st.text_input("Product ID (e.g., P00100)", placeholder="P").upper()
-                vendor_id = st.text_input("Vendor ID (e.g., V050)", placeholder="V").upper()
-                category = st.text_input("Category", placeholder="Electronics")
+                product_id = st.text_input("Product ID (e.g., P00100)")
+                vendor_id = st.text_input("Vendor ID (e.g., V050)")
+                category = st.text_input("Category")
             with col2:
-                sub_category = st.text_input("Sub-Category", placeholder="Laptops")
-                price_usd = st.number_input("Price (USD)", min_value=0.01, value=100.0)
+                sub_category = st.text_input("Sub-Category")
+                price_usd = st.number_input("Price (USD)", min_value=0.01, value=0.0, step=1.0)
                 discount_rate = st.slider("Discount Rate", 0.0, 1.0, 0.0, 0.01)
-                ad_spend_usd = st.number_input("Ad Spend (USD)", min_value=0.0, value=0.0)
+                ad_spend_usd = st.number_input("Ad Spend (USD)", min_value=0.0, value=0.0, step=1.0)
             
             col3, col4 = st.columns(2)
             with col3:
-                views = st.number_input("Views", min_value=0, value=100)
-                orders = st.number_input("Orders", min_value=0, value=10)
-                returns = st.number_input("Returns", min_value=0, value=0)
-                rating = st.slider("Rating", 1.0, 5.0, 4.0, 0.1)
+                views = st.number_input("Views", min_value=0, value=0, step=1)
+                orders = st.number_input("Orders", min_value=0, value=0, step=1)
+                returns = st.number_input("Returns", min_value=0, value=0, step=1)
+                rating = st.slider("Rating", 1.0, 5.0, 3.0, 0.1)
             with col4:
-                rating_count = st.number_input("Rating Count", min_value=0, value=50)
-                stock_units = st.number_input("Stock Units", min_value=0, value=100)
-                avg_fulfillment_days = st.number_input("Avg Fulfillment Days", min_value=0.1, value=3.0)
-                gross_revenue_usd = st.number_input("Gross Revenue (USD)", min_value=0.0, value=price_usd * 10)
+                rating_count = st.number_input("Rating Count", min_value=0, value=0, step=1)
+                stock_units = st.number_input("Stock Units", min_value=0, value=0, step=1)
+                avg_fulfillment_days = st.number_input("Avg Fulfillment Days", min_value=0.1, value=0.1, step=0.1)
+                gross_revenue_usd = st.number_input("Gross Revenue (USD)", min_value=0.0, value=0.0, step=1.0)
             
             if st.form_submit_button("Add Product", use_container_width=True):
                 if product_id and len(product_id) > 1 and vendor_id and len(vendor_id) > 1:
                     result = add_product(
-                        str(date), product_id, vendor_id, category, sub_category,
+                        str(date), product_id.upper(), vendor_id.upper(), category, sub_category,
                         price_usd, discount_rate, ad_spend_usd, views, orders,
                         gross_revenue_usd, returns, rating, rating_count,
                         stock_units, avg_fulfillment_days
