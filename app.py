@@ -5,6 +5,45 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="Marketplace Performance Dashboard", layout="wide")
 
+# ---- Navigation (Dashboard vs RAG Chatbot) ----
+mode = st.sidebar.radio("Mode", ["Dashboard", "RAG Chatbot"], index=0)
+
+if mode == "RAG Chatbot":
+    st.title("📊 Marketplace RAG Chatbot")
+    st.caption("Ask questions grounded in REPORT.md, tables, and AI recommendation outputs. Answers include sources.")
+
+    # Import only when needed (keeps dashboard fast)
+    from rag.rag_core import answer
+
+    if "rag_messages" not in st.session_state:
+        st.session_state.rag_messages = []
+
+    # Show chat history
+    for m in st.session_state.rag_messages:
+        with st.chat_message(m["role"]):
+            st.markdown(m["content"])
+
+    prompt = st.chat_input("Ask a question (e.g., 'Why are some vendors underperforming?')")
+    if prompt:
+        st.session_state.rag_messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        with st.chat_message("assistant"):
+            with st.spinner("Retrieving and answering..."):
+                out, contexts = answer(prompt)
+                st.markdown(out)
+
+                with st.expander("Sources used"):
+                    for i, c in enumerate(contexts, start=1):
+                        st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
+                        st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
+
+        st.session_state.rag_messages.append({"role": "assistant", "content": out})
+
+    st.stop()  # Prevent dashboard code from running under chatbot mode
+
+
 @st.cache_data
 def load_data():
     clean = pd.read_csv("synthetic_marketplace_daily_clean.csv", parse_dates=["date"])
