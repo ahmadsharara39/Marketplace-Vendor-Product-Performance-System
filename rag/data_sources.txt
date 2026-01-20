@@ -1,0 +1,9 @@
+REPORT.md
+AI_management_summary.txt
+table_top_vendors_by_net_revenue.csv
+table_top_vendors_by_conversion.csv
+table_underperforming_vendors.csv
+table_category_performance.csv
+table_high_views_low_orders_products.csv
+ai_discount_recommendations.csv
+ai_vendor_promotion_recommendations.csv
