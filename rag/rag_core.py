@@ -31,8 +31,10 @@ def init():
     if _emb is None:
         _emb = SentenceTransformer(MODEL_NAME)
 
-def retrieve(query: str, k=TOP_K):
+def retrieve(query: str, k=None):
     init()
+    if k is None:
+        k = len(_chunks)  # Return all chunks
     qv = _emb.encode([query], normalize_embeddings=True).astype("float32")
     scores, idx = _index.search(qv, k)
     results = []
