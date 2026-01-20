@@ -1,0 +1,36 @@
+vendor_id,vendor_tier,vendor_region,vendor_quality_score
+V001,Silver,Levant,0.304
+V002,Silver,GCC,-1.04
+V003,Bronze,Levant,0.75
+V004,Silver,Europe,0.941
+V005,Gold,GCC,-1.951
+V006,Silver,North Africa,-1.302
+V007,Bronze,Levant,0.128
+V008,Gold,GCC,-0.316
+V009,Silver,Asia,-0.017
+V010,Silver,Levant,-0.853
+V011,Bronze,Europe,0.879
+V012,Silver,GCC,0.778
+V013,Silver,North Africa,0.066
+V014,Gold,Levant,1.127
+V015,Bronze,Asia,0.468
+V016,Silver,GCC,-0.859
+V017,Silver,Europe,-0.959
+V018,Bronze,Levant,0.878
+V019,Gold,GCC,0.05
+V020,Silver,North Africa,0.514
+V021,Bronze,Asia,-0.216
+V022,Silver,Levant,0.612
+V023,Gold,Europe,1.334
+V024,Silver,GCC,-0.433
+V025,Bronze,North Africa,0.143
+V026,Silver,Asia,-0.778
+V027,Bronze,Levant,0.406
+V028,Silver,GCC,0.982
+V029,Gold,Europe,-0.102
+V030,Silver,Levant,0.267
+V031,Bronze,Asia,-0.594
+V032,Silver,GCC,0.821
+V033,Gold,North Africa,1.041
+V034,Silver,Europe,-0.247
+V035,Bronze,Levant,0.359

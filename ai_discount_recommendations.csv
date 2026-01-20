@@ -1,0 +1,3 @@
+product_id,vendor_id,category,sub_category,price_usd,views,orders,p_order,avg_discount,stock,avg_rating,avg_fulfillment,conversion_rate,suggested_discount
+P00162,V004,Grocery,Pantry,12.47,1125,67,0.9641511586970729,0.007785714285714286,491.0,3.91,5.7,0.059555555555555556,0.1
+P00207,V033,Grocery,Fresh,14.01,1021,80,0.9806958542086293,0.0032142857142857142,515.0,4.08,5.0,0.07835455435847209,0.1

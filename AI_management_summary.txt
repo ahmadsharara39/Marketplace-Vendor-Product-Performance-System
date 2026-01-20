@@ -1,0 +1,22 @@
+Management Performance Summary (AI-generated style, data-driven)
+
+Period: 2025-09-01 to 2025-12-29 (120 days)
+Platform totals: $9,724,319 net revenue from 310,106 orders and 2,878,331 views.
+Overall conversion rate: 10.8%. Overall return rate: 5.8%.
+Avg fulfillment time (weighted avg across products): 3.6 days.
+
+Vendor highlights:
+- Top vendor by net revenue: V012 ($583,998).
+- Top vendor by conversion (among sufficiently viewed vendors): V005 (16.1%).
+- Underperformers show a pattern of lower conversion + longer fulfillment times; the bottom set averages 3.6 days fulfillment and 8.1% conversion.
+
+Category highlights:
+- Best category by net revenue: Electronics ($3,363,022), with 9.7% conversion.
+- Lowest category by net revenue: Grocery ($591,148).
+
+Near-term actions recommended:
+1) Discount test: 1 high-traffic products have high views but low predicted purchase probability. Suggested discounts are in the ~10–25% range.
+2) Vendor promotion: 4 vendors have strong conversion but low visibility; they are candidates for homepage/search boosting or ad credits.
+3) Operational improvement: Prioritize reducing fulfillment time for vendors with >3,000 views and below-median conversion.
+
+Model note: purchase-probability model (logistic regression) achieved ROC-AUC=0.841, Average Precision=0.996 on a held-out set.
