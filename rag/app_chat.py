@@ -1,10 +1,76 @@
 import streamlit as st
 from rag_core import answer
+from add_data import add_vendor, add_product, get_vendor_suggestions, get_product_suggestions
 
 st.set_page_config(page_title="Marketplace RAG Chatbot", layout="wide")
 st.title("📊 Marketplace RAG Chatbot (Docs + AI Recommendations)")
 
 st.caption("Ask questions about vendors, categories, performance tables, and recommendations. Answers include sources.")
+
+# Sidebar for adding vendors/products
+with st.sidebar:
+    st.header("➕ Add Data")
+    tab1, tab2 = st.tabs(["Add Vendor", "Add Product"])
+    
+    with tab1:
+        st.subheader("Add New Vendor")
+        with st.form("vendor_form"):
+            vendor_id = st.text_input("Vendor ID (e.g., V050)", placeholder="V").upper()
+            vendor_tier = st.selectbox("Vendor Tier", ["Bronze", "Silver", "Gold"])
+            vendor_region = st.selectbox("Vendor Region", ["Levant", "GCC", "Europe", "North Africa", "Asia"])
+            vendor_quality_score = st.slider("Quality Score", -2.0, 2.0, 0.0, 0.1)
+            
+            if st.form_submit_button("Add Vendor", use_container_width=True):
+                if vendor_id and len(vendor_id) > 1:
+                    result = add_vendor(vendor_id, vendor_tier, vendor_region, vendor_quality_score)
+                    if result["success"]:
+                        st.success(result["message"])
+                    else:
+                        st.error(result["message"])
+                else:
+                    st.error("Please enter a valid Vendor ID")
+    
+    with tab2:
+        st.subheader("Add New Product")
+        with st.form("product_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                date = st.date_input("Date")
+                product_id = st.text_input("Product ID (e.g., P00100)", placeholder="P").upper()
+                vendor_id = st.text_input("Vendor ID (e.g., V050)", placeholder="V").upper()
+                category = st.text_input("Category", placeholder="Electronics")
+            with col2:
+                sub_category = st.text_input("Sub-Category", placeholder="Laptops")
+                price_usd = st.number_input("Price (USD)", min_value=0.01, value=100.0)
+                discount_rate = st.slider("Discount Rate", 0.0, 1.0, 0.0, 0.01)
+                ad_spend_usd = st.number_input("Ad Spend (USD)", min_value=0.0, value=0.0)
+            
+            col3, col4 = st.columns(2)
+            with col3:
+                views = st.number_input("Views", min_value=0, value=100)
+                orders = st.number_input("Orders", min_value=0, value=10)
+                returns = st.number_input("Returns", min_value=0, value=0)
+                rating = st.slider("Rating", 1.0, 5.0, 4.0, 0.1)
+            with col4:
+                rating_count = st.number_input("Rating Count", min_value=0, value=50)
+                stock_units = st.number_input("Stock Units", min_value=0, value=100)
+                avg_fulfillment_days = st.number_input("Avg Fulfillment Days", min_value=0.1, value=3.0)
+                gross_revenue_usd = st.number_input("Gross Revenue (USD)", min_value=0.0, value=price_usd * 10)
+            
+            if st.form_submit_button("Add Product", use_container_width=True):
+                if product_id and len(product_id) > 1 and vendor_id and len(vendor_id) > 1:
+                    result = add_product(
+                        str(date), product_id, vendor_id, category, sub_category,
+                        price_usd, discount_rate, ad_spend_usd, views, orders,
+                        gross_revenue_usd, returns, rating, rating_count,
+                        stock_units, avg_fulfillment_days
+                    )
+                    if result["success"]:
+                        st.success(result["message"])
+                    else:
+                        st.error(result["message"])
+                else:
+                    st.error("Please fill in all required fields")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
