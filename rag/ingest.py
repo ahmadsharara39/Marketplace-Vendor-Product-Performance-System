@@ -19,6 +19,18 @@ def read_file(path: Path) -> str:
 
     if path.suffix.lower() == ".csv":
         df = pd.read_csv(path)
+        
+        # Special handling for vendors_master.csv to include summary
+        if "vendors_master" in path.name:
+            total_vendors = len(df)
+            summary = f"VENDOR MASTER DATA\n"
+            summary += f"Total number of vendors: {total_vendors}\n\n"
+            summary += f"Vendor tiers: {', '.join(df['vendor_tier'].unique())}\n"
+            summary += f"Vendor regions: {', '.join(df['vendor_region'].unique())}\n\n"
+            summary += "Individual vendor details:\n"
+            summary += df.head(200).to_string(index=False)
+            return summary
+        
         # turn table into readable text (limit width for embeddings)
         return df.head(200).to_csv(index=False)  # keep it smaller for better retrieval
 
