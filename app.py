@@ -45,113 +45,137 @@ if mode == "RAG Chatbot":
             if is_add_vendor and not is_add_product:
                 st.session_state.show_add_vendor_form = True
                 st.session_state.show_add_product_form = False
+                st.markdown("### ➕ Add Vendor\nUse the form below to add a new vendor.")
             elif is_add_product and not is_add_vendor:
                 st.session_state.show_add_product_form = True
                 st.session_state.show_add_vendor_form = False
-
-            # Show vendor form if triggered
-            if st.session_state.show_add_vendor_form:
-                st.markdown("### ➕ Add Vendor")
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    vendor_id = st.text_input("vendor_id (e.g., V050)", key="vendor_id_add")
-                    vendor_tier = st.selectbox("vendor_tier", ["Bronze", "Silver", "Gold"], key="vendor_tier_add")
-                with col2:
-                    vendor_region = st.selectbox("vendor_region", ["Levant", "GCC", "Europe", "North Africa", "Asia"], key="vendor_region_add")
-                    vendor_quality_score = st.slider("vendor_quality_score (-2 to 2)", -2.0, 2.0, 0.0, key="vendor_quality_score_add")
-                
-                col_save, col_cancel = st.columns(2)
-                with col_save:
-                    if st.button("✅ Save Vendor", key="save_vendor_btn"):
-                        if vendor_id:
-                            try:
-                                result = add_vendor(vendor_id, vendor_tier, vendor_region, vendor_quality_score)
-                                st.success(f"✅ Vendor {vendor_id} saved successfully!")
-                                out = f"✅ Vendor **{vendor_id}** has been saved to the database."
-                                st.session_state.rag_messages.append({"role": "assistant", "content": out})
-                                st.session_state.show_add_vendor_form = False
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"❌ Error saving vendor: {str(e)}")
-                        else:
-                            st.warning("Please enter a vendor_id")
-                with col_cancel:
-                    if st.button("❌ Cancel", key="cancel_vendor_btn"):
+                st.markdown("### ➕ Add Product\nUse the form below to add a new product.")
+    
+    # === FORMS OUTSIDE CHAT MESSAGE (stable rendering) ===
+    
+    # Show vendor form if triggered
+    if st.session_state.show_add_vendor_form:
+        st.divider()
+        st.subheader("Add Vendor")
+        
+        vendor_form = st.form("add_vendor_form", clear_on_submit=False)
+        with vendor_form:
+            col1, col2 = st.columns(2)
+            with col1:
+                vendor_id = st.text_input("vendor_id (e.g., V050)", key="vendor_id_add")
+                vendor_tier = st.selectbox("vendor_tier", ["Bronze", "Silver", "Gold"], key="vendor_tier_add")
+            with col2:
+                vendor_region = st.selectbox("vendor_region", ["Levant", "GCC", "Europe", "North Africa", "Asia"], key="vendor_region_add")
+                vendor_quality_score = st.slider("vendor_quality_score (-2 to 2)", -2.0, 2.0, 0.0, key="vendor_quality_score_add")
+            
+            col_save, col_cancel = st.columns(2)
+            with col_save:
+                submitted = st.form_submit_button("✅ Save Vendor")
+            with col_cancel:
+                canceled = st.form_submit_button("❌ Cancel")
+            
+            if canceled:
+                st.session_state.show_add_vendor_form = False
+                st.rerun()
+            
+            if submitted:
+                if vendor_id:
+                    try:
+                        result = add_vendor(vendor_id, vendor_tier, vendor_region, vendor_quality_score)
+                        st.success(f"✅ Vendor {vendor_id} saved successfully!")
+                        out = f"✅ Vendor **{vendor_id}** has been saved to the database."
+                        st.session_state.rag_messages.append({"role": "assistant", "content": out})
                         st.session_state.show_add_vendor_form = False
                         st.rerun()
-                
-                st.stop()
+                    except Exception as e:
+                        st.error(f"❌ Error saving vendor: {str(e)}")
+                else:
+                    st.warning("Please enter a vendor_id")
 
-            # Show product form if triggered
-            if st.session_state.show_add_product_form:
-                st.markdown("### ➕ Add Product")
-                
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    date = st.date_input("date", key="date_add")
-                    product_id = st.text_input("product_id (e.g., P00100)", key="product_id_add")
-                    vendor_id = st.text_input("vendor_id (e.g., V050)", key="vendor_id_product_add")
-                with col2:
-                    category = st.text_input("category", key="category_add")
-                    sub_category = st.text_input("sub_category", key="sub_category_add")
-                    price_usd = st.number_input("price_usd", min_value=0.0, key="price_usd_add")
-                with col3:
-                    discount_rate = st.slider("discount_rate (0–1)", 0.0, 1.0, 0.0, key="discount_rate_add")
-                    ad_spend_usd = st.number_input("ad_spend_usd", min_value=0.0, key="ad_spend_usd_add")
-                    views = st.number_input("views", min_value=0, step=1, key="views_add")
-                
-                col4, col5, col6 = st.columns(3)
-                with col4:
-                    orders = st.number_input("orders", min_value=0, step=1, key="orders_add")
-                    gross_revenue_usd = st.number_input("gross_revenue_usd", min_value=0.0, key="gross_revenue_usd_add")
-                    returns = st.number_input("returns", min_value=0, step=1, key="returns_add")
-                with col5:
-                    rating = st.slider("rating (1–5)", 1.0, 5.0, 3.0, key="rating_add")
-                    rating_count = st.number_input("rating_count", min_value=0, step=1, key="rating_count_add")
-                with col6:
-                    stock_units = st.number_input("stock_units", min_value=0, step=1, key="stock_units_add")
-                    avg_fulfillment_days = st.number_input("avg_fulfillment_days", min_value=0.0, key="avg_fulfillment_days_add")
-                
-                col_save, col_cancel = st.columns(2)
-                with col_save:
-                    if st.button("✅ Save Product", key="save_product_btn"):
-                        if product_id and vendor_id:
-                            try:
-                                result = add_product(
-                                    date.isoformat(),
-                                    product_id, vendor_id, category, sub_category,
-                                    price_usd, discount_rate, ad_spend_usd,
-                                    views, orders, gross_revenue_usd, returns,
-                                    rating, rating_count, stock_units, avg_fulfillment_days
-                                )
-                                st.success(f"✅ Product {product_id} saved successfully!")
-                                out = f"✅ Product **{product_id}** has been saved to the database."
-                                st.session_state.rag_messages.append({"role": "assistant", "content": out})
-                                st.session_state.show_add_product_form = False
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"❌ Error saving product: {str(e)}")
-                        else:
-                            st.warning("Please enter product_id and vendor_id")
-                with col_cancel:
-                    if st.button("❌ Cancel", key="cancel_product_btn"):
+    
+    # Show product form if triggered
+    if st.session_state.show_add_product_form:
+        st.divider()
+        st.subheader("Add Product")
+        
+        product_form = st.form("add_product_form", clear_on_submit=False)
+        with product_form:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                date = st.date_input("date", key="date_add")
+                product_id = st.text_input("product_id (e.g., P00100)", key="product_id_add")
+                vendor_id = st.text_input("vendor_id (e.g., V050)", key="vendor_id_product_add")
+            with col2:
+                category = st.text_input("category", key="category_add")
+                sub_category = st.text_input("sub_category", key="sub_category_add")
+                price_usd = st.number_input("price_usd", min_value=0.0, key="price_usd_add")
+            with col3:
+                discount_rate = st.slider("discount_rate (0–1)", 0.0, 1.0, 0.0, key="discount_rate_add")
+                ad_spend_usd = st.number_input("ad_spend_usd", min_value=0.0, key="ad_spend_usd_add")
+                views = st.number_input("views", min_value=0, step=1, key="views_add")
+            
+            col4, col5, col6 = st.columns(3)
+            with col4:
+                orders = st.number_input("orders", min_value=0, step=1, key="orders_add")
+                gross_revenue_usd = st.number_input("gross_revenue_usd", min_value=0.0, key="gross_revenue_usd_add")
+                returns = st.number_input("returns", min_value=0, step=1, key="returns_add")
+            with col5:
+                rating = st.slider("rating (1–5)", 1.0, 5.0, 3.0, key="rating_add")
+                rating_count = st.number_input("rating_count", min_value=0, step=1, key="rating_count_add")
+            with col6:
+                stock_units = st.number_input("stock_units", min_value=0, step=1, key="stock_units_add")
+                avg_fulfillment_days = st.number_input("avg_fulfillment_days", min_value=0.0, key="avg_fulfillment_days_add")
+            
+            col_save, col_cancel = st.columns(2)
+            with col_save:
+                product_submitted = st.form_submit_button("✅ Save Product")
+            with col_cancel:
+                product_canceled = st.form_submit_button("❌ Cancel")
+            
+            if product_canceled:
+                st.session_state.show_add_product_form = False
+                st.rerun()
+            
+            if product_submitted:
+                if product_id and vendor_id:
+                    try:
+                        result = add_product(
+                            date.isoformat(),
+                            product_id, vendor_id, category, sub_category,
+                            price_usd, discount_rate, ad_spend_usd,
+                            views, orders, gross_revenue_usd, returns,
+                            rating, rating_count, stock_units, avg_fulfillment_days
+                        )
+                        st.success(f"✅ Product {product_id} saved successfully!")
+                        out = f"✅ Product **{product_id}** has been saved to the database."
+                        st.session_state.rag_messages.append({"role": "assistant", "content": out})
                         st.session_state.show_add_product_form = False
                         st.rerun()
-                
-                st.stop()
+                    except Exception as e:
+                        st.error(f"❌ Error saving product: {str(e)}")
+                else:
+                    st.warning("Please enter product_id and vendor_id")
+    
+    # === NORMAL RAG FLOW (only if not in form mode) ===
+    if prompt and not st.session_state.show_add_vendor_form and not st.session_state.show_add_product_form:
+        with st.chat_message("assistant"):
+            prompt_lower = prompt.lower().strip()
 
-            # 4️⃣ Normal RAG flow
-            with st.spinner("Retrieving and answering..."):
-                out, contexts = answer(prompt)
-                st.markdown(out)
+            is_add_vendor = "vendor" in prompt_lower and "add" in prompt_lower
+            is_add_product = "product" in prompt_lower and "add" in prompt_lower
 
-                with st.expander("Sources used"):
-                    for i, c in enumerate(contexts or [], start=1):
-                        st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
-                        st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
+            # Skip RAG if it's an add request
+            if not (is_add_vendor or is_add_product):
+                with st.spinner("Retrieving and answering..."):
+                    out, contexts = answer(prompt)
+                    st.markdown(out)
 
-                st.session_state.rag_messages.append({"role": "assistant", "content": out})
+                    with st.expander("Sources used"):
+                        for i, c in enumerate(contexts or [], start=1):
+                            st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
+                            st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
+
+                    st.session_state.rag_messages.append({"role": "assistant", "content": out})
 
     st.stop()  # Prevent dashboard code from running under chatbot mode
 
