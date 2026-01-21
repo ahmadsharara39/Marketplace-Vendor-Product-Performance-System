@@ -33,20 +33,20 @@ if mode == "RAG Chatbot":
         with st.chat_message("assistant"):
             prompt_lower = prompt.lower().strip()
 
-    is_add_vendor = "vendor" in prompt_lower and "add" in prompt_lower
-    is_add_product = "product" in prompt_lower and "add" in prompt_lower
+            is_add_vendor = "vendor" in prompt_lower and "add" in prompt_lower
+            is_add_product = "product" in prompt_lower and "add" in prompt_lower
 
-    looks_like_filled_vendor = all(k in prompt_lower for k in [
-        "vendor_id", "vendor_tier", "vendor_region", "vendor_quality_score"
-    ])
+            looks_like_filled_vendor = all(k in prompt_lower for k in [
+                "vendor_id", "vendor_tier", "vendor_region", "vendor_quality_score"
+            ])
 
-    looks_like_filled_product = all(k in prompt_lower for k in [
-        "product_id", "vendor_id", "category", "sub_category"
-    ])
+            looks_like_filled_product = all(k in prompt_lower for k in [
+                "product_id", "vendor_id", "category", "sub_category"
+            ])
 
-    # 1️⃣ ADD VENDOR → empty fields only
-    if is_add_vendor and not is_add_product:
-        out = """
+            # 1️⃣ ADD VENDOR → empty fields only
+            if is_add_vendor and not is_add_product:
+                out = """
 ### ➕ Add Vendor (empty fields – fill with your data)
 
 vendor_id (e.g., V050):
@@ -57,13 +57,13 @@ vendor_quality_score (-2 to 2):
 ⬅️ These fields are intentionally empty.
 Please fill them using the **sidebar Add Vendor form** to save the vendor.
 """
-        st.markdown(out)
-        st.session_state.rag_messages.append({"role": "assistant", "content": out})
-        st.stop()
+                st.markdown(out)
+                st.session_state.rag_messages.append({"role": "assistant", "content": out})
+                st.stop()
 
-    # 2️⃣ ADD PRODUCT → empty fields only
-    if is_add_product and not is_add_vendor:
-        out = """
+            # 2️⃣ ADD PRODUCT → empty fields only
+            if is_add_product and not is_add_vendor:
+                out = """
 ### ➕ Add Product (empty fields – fill with your data)
 
 date (YYYY-MM-DD):
@@ -86,30 +86,28 @@ avg_fulfillment_days:
 ⬅️ These fields are intentionally empty.
 Please fill them using the **sidebar Add Product form** to save the product.
 """
-        st.markdown(out)
-        st.session_state.rag_messages.append({"role": "assistant", "content": out})
-        st.stop()
+                st.markdown(out)
+                st.session_state.rag_messages.append({"role": "assistant", "content": out})
+                st.stop()
 
-    # 3️⃣ If user pastes filled fields → gentle reminder (NO RAG)
-    if looks_like_filled_vendor or looks_like_filled_product:
-        out = "✅ I see filled values. To save data, please enter them in the **sidebar form**."
-        st.markdown(out)
-        st.session_state.rag_messages.append({"role": "assistant", "content": out})
-        st.stop()
+            # 3️⃣ If user pastes filled fields → gentle reminder (NO RAG)
+            if looks_like_filled_vendor or looks_like_filled_product:
+                out = "✅ I see filled values. To save data, please enter them in the **sidebar form**."
+                st.markdown(out)
+                st.session_state.rag_messages.append({"role": "assistant", "content": out})
+                st.stop()
 
-    # 4️⃣ Normal RAG flow
-    with st.spinner("Retrieving and answering..."):
-        out, contexts = answer(prompt)
-        st.markdown(out)
+            # 4️⃣ Normal RAG flow
+            with st.spinner("Retrieving and answering..."):
+                out, contexts = answer(prompt)
+                st.markdown(out)
 
-        with st.expander("Sources used"):
-            for i, c in enumerate(contexts or [], start=1):
-                st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
-                st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
+                with st.expander("Sources used"):
+                    for i, c in enumerate(contexts or [], start=1):
+                        st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
+                        st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
 
-        st.session_state.rag_messages.append({"role": "assistant", "content": out})
-
-
+                st.session_state.rag_messages.append({"role": "assistant", "content": out})
 
     st.stop()  # Prevent dashboard code from running under chatbot mode
 
