@@ -435,21 +435,21 @@ def insert_discount_recommendation(product_id: str, vendor_id: str, category: st
         cur.close()
         conn.close()
 
-def insert_marketplace_daily_clean(date: str, product_id: str, vendor_id: str, category: str, sub_category: str,
-                                    price_usd: float, discount_rate: float, ad_spend_usd: float, views: int, orders: int,
-                                    gross_revenue_usd: float, returns: int, rating: float, rating_count: int,
-                                    stock_units: int, avg_fulfillment_days: float, conversion_rate: float,
-                                    return_rate: float, net_revenue_usd: float) -> bool:
-    """Insert marketplace daily clean record"""
+def insert_marketplace_daily_clean(
+    date: str, product_id: str, vendor_id: str, category: str, sub_category: str,
+    price_usd: float, discount_rate: float, ad_spend_usd: float, views: int, orders: int,
+    gross_revenue_usd: float, returns: int, rating: float, rating_count: int,
+    stock_units: int, avg_fulfillment_days: float, conversion_rate: float,
+    return_rate: float, net_revenue_usd: float
+) -> bool:
     conn = get_connection()
     cur = conn.cursor()
-    
     try:
         cur.execute("""
             INSERT INTO marketplace_daily_clean
             (date, product_id, vendor_id, category, sub_category, price_usd, discount_rate, ad_spend_usd,
-            views, orders, gross_revenue_usd, returns, rating, rating_count, stock_units, avg_fulfillment_days,
-            conversion_rate, return_rate, net_revenue_usd)
+             views, orders, gross_revenue_usd, returns, rating, rating_count, stock_units, avg_fulfillment_days,
+             conversion_rate, return_rate, net_revenue_usd)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (date, product_id, vendor_id) DO UPDATE SET
                 category = EXCLUDED.category,
@@ -468,20 +468,20 @@ def insert_marketplace_daily_clean(date: str, product_id: str, vendor_id: str, c
                 conversion_rate = EXCLUDED.conversion_rate,
                 return_rate = EXCLUDED.return_rate,
                 net_revenue_usd = EXCLUDED.net_revenue_usd
-        """,(date, product_id, vendor_id, category, sub_category, price_usd, discount_rate, ad_spend_usd,
-              views, orders, gross_revenue_usd, returns, rating, rating_count, stock_units, avg_fulfillment_days,
-              conversion_rate, return_rate, net_revenue_usd))
-        
-        if cur.rowcount > 0:
-            conn.commit()
-            return True
-        else:
-            conn.rollback()
-            return False
+        """, (
+            date, product_id, vendor_id, category, sub_category, price_usd, discount_rate, ad_spend_usd,
+            views, orders, gross_revenue_usd, returns, rating, rating_count, stock_units, avg_fulfillment_days,
+            conversion_rate, return_rate, net_revenue_usd
+        ))
+
+        conn.commit()
+        return True
+
     except Exception as e:
         conn.rollback()
-        print(f"Error inserting marketplace_daily_clean: {e}")
+        print(f"❌ marketplace_daily_clean insert failed: {e}")  # <-- this is key
         return False
+
     finally:
         cur.close()
         conn.close()
