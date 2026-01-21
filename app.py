@@ -33,26 +33,25 @@ if mode == "RAG Chatbot":
         with st.chat_message("assistant"):
             prompt_lower = prompt.lower().strip()
 
-    # Detect intent
-    is_add_vendor = ("vendor" in prompt_lower) and ("add" in prompt_lower or "new" in prompt_lower or "create" in prompt_lower)
-    is_add_product = ("product" in prompt_lower) and ("add" in prompt_lower or "new" in prompt_lower or "create" in prompt_lower)
+            # Detect intent
+            is_add_vendor = ("vendor" in prompt_lower) and ("add" in prompt_lower or "new" in prompt_lower or "create" in prompt_lower)
+            is_add_product = ("product" in prompt_lower) and ("add" in prompt_lower or "new" in prompt_lower or "create" in prompt_lower)
 
-
-    # ✅ Show the right empty fields and NEVER call OpenAI
-    if is_add_vendor and not is_add_product:
-        out = """### ➕ Add Vendor (empty fields)
+            # ✅ Show the right empty fields and NEVER call OpenAI
+            if is_add_vendor and not is_add_product:
+                out = """### ➕ Add Vendor (empty fields)
 
 **vendor_id (e.g., V050):**  
 **vendor_tier (Bronze / Silver / Gold):**  
 **vendor_region (Levant / GCC / Europe / North Africa / Asia):**  
 **vendor_quality_score (-2 to 2):**  
 """
-        st.markdown(out)
-        st.session_state.rag_messages.append({"role": "assistant", "content": out})
-        st.stop()
+                st.markdown(out)
+                st.session_state.rag_messages.append({"role": "assistant", "content": out})
+                st.stop()
 
-    if is_add_product and not is_add_vendor:
-        out = """### ➕ Add Product (empty fields)
+            if is_add_product and not is_add_vendor:
+                out = """### ➕ Add Product (empty fields)
 
 **date (YYYY-MM-DD):**  
 **product_id (e.g., P00100):**  
@@ -71,21 +70,21 @@ if mode == "RAG Chatbot":
 **stock_units:**  
 **avg_fulfillment_days:**  
 """
-        st.markdown(out)
-        st.session_state.rag_messages.append({"role": "assistant", "content": out})
-        st.stop()
+                st.markdown(out)
+                st.session_state.rag_messages.append({"role": "assistant", "content": out})
+                st.stop()
 
-    # Normal RAG answer if not an add request
-    with st.spinner("Retrieving and answering..."):
-        out, contexts = answer(prompt)
-        st.markdown(out)
+            # Normal RAG answer if not an add request
+            with st.spinner("Retrieving and answering..."):
+                out, contexts = answer(prompt)
+                st.markdown(out)
 
-        with st.expander("Sources used"):
-            for i, c in enumerate(contexts, start=1):
-                st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
-                st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
+                with st.expander("Sources used"):
+                    for i, c in enumerate(contexts, start=1):
+                        st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
+                        st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
 
-        st.session_state.rag_messages.append({"role": "assistant", "content": out})
+                st.session_state.rag_messages.append({"role": "assistant", "content": out})
 
 
     st.stop()  # Prevent dashboard code from running under chatbot mode
