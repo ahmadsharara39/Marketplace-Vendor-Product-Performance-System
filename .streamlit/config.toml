@@ -1,6 +1,8 @@
 [client]
 showErrorDetails = true
 toolbarMode = "viewer"
+# Force cache busting for frontend assets
+caching = "off"
 
 [logger]
 level = "info"
@@ -10,6 +12,8 @@ level = "info"
 maxUploadSize = 200
 enableXsrfProtection = true
 enableCORS = true
+enableWebsocketCompression = true
+runOnSave = false
 
 [theme]
 primaryColor = "#FF6B6B"
@@ -21,3 +25,5 @@ font = "sans serif"
 [global]
 # Force reload on changes
 dataFrameSerialization = "legacy"
+# Add cache version for frontend assets
+cacheVersion = "2"
