@@ -446,13 +446,29 @@ def insert_marketplace_daily_clean(date: str, product_id: str, vendor_id: str, c
     
     try:
         cur.execute("""
-            INSERT INTO marketplace_daily_clean 
+            INSERT INTO marketplace_daily_clean
             (date, product_id, vendor_id, category, sub_category, price_usd, discount_rate, ad_spend_usd,
-             views, orders, gross_revenue_usd, returns, rating, rating_count, stock_units, avg_fulfillment_days,
-             conversion_rate, return_rate, net_revenue_usd)
+            views, orders, gross_revenue_usd, returns, rating, rating_count, stock_units, avg_fulfillment_days,
+            conversion_rate, return_rate, net_revenue_usd)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (date, product_id, vendor_id) DO NOTHING
-        """, (date, product_id, vendor_id, category, sub_category, price_usd, discount_rate, ad_spend_usd,
+            ON CONFLICT (date, product_id, vendor_id) DO UPDATE SET
+                category = EXCLUDED.category,
+                sub_category = EXCLUDED.sub_category,
+                price_usd = EXCLUDED.price_usd,
+                discount_rate = EXCLUDED.discount_rate,
+                ad_spend_usd = EXCLUDED.ad_spend_usd,
+                views = EXCLUDED.views,
+                orders = EXCLUDED.orders,
+                gross_revenue_usd = EXCLUDED.gross_revenue_usd,
+                returns = EXCLUDED.returns,
+                rating = EXCLUDED.rating,
+                rating_count = EXCLUDED.rating_count,
+                stock_units = EXCLUDED.stock_units,
+                avg_fulfillment_days = EXCLUDED.avg_fulfillment_days,
+                conversion_rate = EXCLUDED.conversion_rate,
+                return_rate = EXCLUDED.return_rate,
+                net_revenue_usd = EXCLUDED.net_revenue_usd
+        """,(date, product_id, vendor_id, category, sub_category, price_usd, discount_rate, ad_spend_usd,
               views, orders, gross_revenue_usd, returns, rating, rating_count, stock_units, avg_fulfillment_days,
               conversion_rate, return_rate, net_revenue_usd))
         
@@ -464,6 +480,7 @@ def insert_marketplace_daily_clean(date: str, product_id: str, vendor_id: str, c
             return False
     except Exception as e:
         conn.rollback()
+        print(f"Error inserting marketplace_daily_clean: {e}")
         return False
     finally:
         cur.close()
