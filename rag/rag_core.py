@@ -4,6 +4,7 @@ import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
 from openai import OpenAI
+from openai import RateLimitError
 
 ROOT = Path(__file__).resolve().parents[1]
 RAG_DIR = ROOT / "rag"
@@ -34,7 +35,7 @@ def init():
 def retrieve(query: str, k=None):
     init()
     if k is None:
-        k = len(_chunks)  # Return all chunks
+        k = TOP_K  # Return all chunks
     qv = _emb.encode([query], normalize_embeddings=True).astype("float32")
     scores, idx = _index.search(qv, k)
     results = []

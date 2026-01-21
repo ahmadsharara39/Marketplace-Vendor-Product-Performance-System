@@ -134,37 +134,25 @@ if prompt:
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        # Check if user is asking about adding vendor or product
         prompt_lower = prompt.lower().strip()
-        
-        # More comprehensive keywords to detect add vendor/product requests
-        add_vendor_keywords = [
-            "add new vendor", "add vendor", "add a vendor", "new vendor", "create vendor", 
-            "want to add vendor", "i want to add vendor", "adding vendor",
-            "how to add vendor", "add new vendor", "create new vendor",
-            "onboard vendor", "add vendor to marketplace", "vendor to the marketplace",
-            "to add a vendor", "to add vendor", "please consider", "vendor performance",
-            "vendor tier", "vendor region", "vendor quality", "vendor overview",
-            "current vendor", "35 vendors", "bronze", "silver", "gold",
-            "current vendor landscape", "vendor evaluation", "vendor addition"
-        ]
-        add_product_keywords = [
-            "add new product", "add product", "add a product", "new product", "create product", 
-            "want to add product", "i want to add product", "adding product",
-            "how to add product", "add new product", "create new product",
-            "onboard product", "add product to marketplace"
-        ]
-        
-        # Check if any keyword matches (even partial)
-        is_add_vendor = any(keyword in prompt_lower for keyword in add_vendor_keywords)
-        is_add_product = any(keyword in prompt_lower for keyword in add_product_keywords)
-        
-        # Also check if message contains "Current Vendor" or looks like RAG output being re-sent
-        looks_like_vendor_rag = "current vendor" in prompt_lower or "vendor overview" in prompt_lower
-        looks_like_add_request = "to add" in prompt_lower and ("vendor" in prompt_lower or "product" in prompt_lower)
-        
-        if is_add_vendor and not is_add_product:
-            st.markdown("""
+
+    add_vendor_keywords = [
+        "add vendor", "add a vendor", "add new vendor", "add a new vendor",
+        "create vendor", "new vendor", "onboard vendor"
+    ]
+    add_product_keywords = [
+        "add product", "add a product", "add new product", "add a new product",
+        "create product", "new product", "onboard product"
+    ]
+
+    is_add_vendor = any(k in prompt_lower for k in add_vendor_keywords)
+    is_add_product = any(k in prompt_lower for k in add_product_keywords)
+
+    looks_like_add_request = ("add" in prompt_lower) and ("vendor" in prompt_lower or "product" in prompt_lower)
+
+    # ✅ HARD EXIT: never call OpenAI when user is adding data
+    if is_add_vendor and not is_add_product:
+        st.markdown("""
 ### ➕ Add Vendor (empty fields)
 
 **vendor_id (e.g., V050):**  
@@ -174,9 +162,11 @@ if prompt:
 
 ✅ Fill these in the left sidebar → **Add Vendor** tab, then click **✓ Add Vendor to Database**.
 """)
+        st.session_state.messages[-1] = {"role": "assistant", "content": "Vendor add template shown."}
+        st.stop()
 
-elif is_add_product and not is_add_vendor:
-    st.markdown("""
+    if is_add_product and not is_add_vendor:
+        st.markdown("""
 ### ➕ Add Product (empty fields)
 
 **date (YYYY-MM-DD):**  
@@ -198,16 +188,20 @@ elif is_add_product and not is_add_vendor:
 
 ✅ Fill these in the left sidebar → **Add Product** tab, then click **✓ Add Product to Database**.
 """)
+        st.session_state.messages[-1] = {"role": "assistant", "content": "Product add template shown."}
+        st.stop()
 
-elif (looks_like_vendor_rag or looks_like_add_request) and not (is_add_vendor or is_add_product):
-    st.markdown("""
+    if looks_like_add_request and not (is_add_vendor or is_add_product):
+        st.markdown("""
 Do you want to add a **vendor** or a **product**?
 
 - Type **add vendor**
 - Or type **add product**
 """)
+        st.session_state.messages[-1] = {"role": "assistant", "content": "Asked to choose vendor vs product."}
+        st.stop()
 
-else:
+    # Normal RAG flow
     with st.spinner("Retrieving and answering..."):
         out, contexts = answer(prompt)
         st.markdown(out)
