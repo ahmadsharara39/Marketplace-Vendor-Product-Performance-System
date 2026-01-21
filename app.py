@@ -14,6 +14,7 @@ if mode == "RAG Chatbot":
 
     # Import only when needed (keeps dashboard fast)
     from rag.rag_core import answer
+    from rag.add_data import add_vendor, add_product   # if you want chat-driven inserts later
 
     if "rag_messages" not in st.session_state:
         st.session_state.rag_messages = []
@@ -30,14 +31,61 @@ if mode == "RAG Chatbot":
             st.markdown(prompt)
 
         with st.chat_message("assistant"):
-            with st.spinner("Retrieving and answering..."):
-                out, contexts = answer(prompt)
-                st.markdown(out)
+    prompt_lower = prompt.lower().strip()
 
-                with st.expander("Sources used"):
-                    for i, c in enumerate(contexts, start=1):
-                        st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
-                        st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
+    is_add_vendor = ("add" in prompt_lower) and ("vendor" in prompt_lower)
+    is_add_product = ("add" in prompt_lower) and ("product" in prompt_lower)
+
+    # ✅ If user wants to add data, DO NOT call OpenAI
+    if is_add_vendor and not is_add_product:
+        st.markdown("""
+### ➕ Add Vendor (empty fields)
+
+**vendor_id (e.g., V050):**  
+**vendor_tier (Bronze / Silver / Gold):**  
+**vendor_region (Levant / GCC / Europe / North Africa / Asia):**  
+**vendor_quality_score (-2 to 2):**  
+
+✅ Add it using your data-entry UI (sidebar form), or tell me the values here and I can format them for you.
+""")
+        st.session_state.rag_messages.append({"role": "assistant", "content": "Vendor add template shown."})
+        st.stop()
+
+    if is_add_product and not is_add_vendor:
+        st.markdown("""
+### ➕ Add Product (empty fields)
+
+**date (YYYY-MM-DD):**  
+**product_id (e.g., P00100):**  
+**vendor_id (e.g., V050):**  
+**category:**  
+**sub_category:**  
+**price_usd:**  
+**discount_rate (0–1):**  
+**ad_spend_usd:**  
+**views:**  
+**orders:**  
+**gross_revenue_usd:**  
+**returns:**  
+**rating (1–5):**  
+**rating_count:**  
+**stock_units:**  
+**avg_fulfillment_days:**  
+
+✅ Add it using your data-entry UI (sidebar form), or tell me the values here and I can format them for you.
+""")
+        st.session_state.rag_messages.append({"role": "assistant", "content": "Product add template shown."})
+        st.stop()
+
+    # Normal RAG flow
+    with st.spinner("Retrieving and answering..."):
+        out, contexts = answer(prompt)
+        st.markdown(out)
+
+        with st.expander("Sources used"):
+            for i, c in enumerate(contexts, start=1):
+                st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
+                st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
 
         st.session_state.rag_messages.append({"role": "assistant", "content": out})
 
