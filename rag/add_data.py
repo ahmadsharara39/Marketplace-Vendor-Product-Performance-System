@@ -4,7 +4,8 @@ Module for adding vendors and products to the Neon PostgreSQL database
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
-from db_config import insert_vendor, insert_product, get_all_vendors
+from db_config import insert_vendor, insert_product_raw, insert_marketplace_daily_raw, get_all_vendors
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -131,13 +132,38 @@ def add_product(date: str, product_id: str, vendor_id: str, category: str, sub_c
         net_revenue_usd = gross_revenue_usd - (returns * price_usd)
         
         # Add new product to Neon
-        success = insert_product(
-            date, product_id, vendor_id, category, sub_category,
-            price_usd, discount_rate, ad_spend_usd, views, orders,
-            gross_revenue_usd, returns, rating, rating_count,
-            stock_units, avg_fulfillment_days
+        # 1) Insert into products_raw (dimension)
+        insert_product_raw(
+            product_id=product_id,
+            vendor_id=vendor_id,
+            category=category,
+            sub_category=sub_category,
+            price_usd=price_usd,
+            rating=rating,
+            rating_count=rating_count,
+            avg_fulfillment_days=avg_fulfillment_days
         )
-        
+
+        # 2) Insert into marketplace_daily_raw (fact)
+        success = insert_marketplace_daily_raw(
+            date=date,
+            product_id=product_id,
+            vendor_id=vendor_id,
+            category=category,
+            sub_category=sub_category,
+            price_usd=price_usd,
+            discount_rate=discount_rate,
+            ad_spend_usd=ad_spend_usd,
+            views=views,
+            orders=orders,
+            gross_revenue_usd=gross_revenue_usd,
+            returns=returns,
+            rating=rating,
+            rating_count=rating_count,
+            stock_units=stock_units,
+            avg_fulfillment_days=avg_fulfillment_days
+        )
+
         if success:
             return {
                 "success": True,

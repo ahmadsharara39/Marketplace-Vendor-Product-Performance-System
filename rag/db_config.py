@@ -9,7 +9,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Neon connection string
-DATABASE_URL = "postgresql://neondb_owner:npg_yFpPzO2Di8gL@ep-hidden-sea-ahsxt09w-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not set. Put it in .env")
 
 def get_connection():
     """Get a connection to Neon PostgreSQL"""
@@ -212,36 +214,36 @@ def insert_vendor(vendor_id: str, vendor_tier: str, vendor_region: str, vendor_q
         cur.close()
         conn.close()
 
-def insert_product(date: str, product_id: str, vendor_id: str, category: str, sub_category: str,
-                   price_usd: float, discount_rate: float, ad_spend_usd: float, views: int, orders: int,
-                   gross_revenue_usd: float, returns: int, rating: float, rating_count: int,
-                   stock_units: int, avg_fulfillment_days: float, conversion_rate: float,
-                   return_rate: float, net_revenue_usd: float) -> bool:
-    """Insert a product into the database"""
-    conn = get_connection()
-    cur = conn.cursor()
+# def insert_product(date: str, product_id: str, vendor_id: str, category: str, sub_category: str,
+#                    price_usd: float, discount_rate: float, ad_spend_usd: float, views: int, orders: int,
+#                    gross_revenue_usd: float, returns: int, rating: float, rating_count: int,
+#                    stock_units: int, avg_fulfillment_days: float, conversion_rate: float,
+#                    return_rate: float, net_revenue_usd: float) -> bool:
+#     """Insert a product into the database"""
+#     conn = get_connection()
+#     cur = conn.cursor()
     
-    try:
-        cur.execute("""
-            INSERT INTO products 
-            (date, product_id, vendor_id, category, sub_category, price_usd, discount_rate, 
-             ad_spend_usd, views, orders, gross_revenue_usd, returns, rating, rating_count, 
-             stock_units, avg_fulfillment_days, conversion_rate, return_rate, net_revenue_usd)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (date, product_id, vendor_id) DO NOTHING
-        """, (date, product_id, vendor_id, category, sub_category, price_usd, discount_rate,
-              ad_spend_usd, views, orders, gross_revenue_usd, returns, rating, rating_count,
-              stock_units, avg_fulfillment_days, conversion_rate, return_rate, net_revenue_usd))
+#     try:
+#         cur.execute("""
+#             INSERT INTO products 
+#             (date, product_id, vendor_id, category, sub_category, price_usd, discount_rate, 
+#              ad_spend_usd, views, orders, gross_revenue_usd, returns, rating, rating_count, 
+#              stock_units, avg_fulfillment_days, conversion_rate, return_rate, net_revenue_usd)
+#             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+#             ON CONFLICT (date, product_id, vendor_id) DO NOTHING
+#         """, (date, product_id, vendor_id, category, sub_category, price_usd, discount_rate,
+#               ad_spend_usd, views, orders, gross_revenue_usd, returns, rating, rating_count,
+#               stock_units, avg_fulfillment_days, conversion_rate, return_rate, net_revenue_usd))
         
-        conn.commit()
-        return cur.rowcount > 0
-    except Exception as e:
-        conn.rollback()
-        print(f"Error inserting product: {e}")
-        return False
-    finally:
-        cur.close()
-        conn.close()
+#         conn.commit()
+#         return cur.rowcount > 0
+#     except Exception as e:
+#         conn.rollback()
+#         print(f"Error inserting product: {e}")
+#         return False
+#     finally:
+#         cur.close()
+#         conn.close()
 
 def get_all_vendors():
     """Get all vendors from database"""
