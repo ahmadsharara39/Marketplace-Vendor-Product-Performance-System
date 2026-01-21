@@ -44,55 +44,89 @@ if mode == "RAG Chatbot":
                 "product_id", "vendor_id", "category", "sub_category"
             ])
 
-            # 1️⃣ ADD VENDOR → empty fields only
+            # 1️⃣ ADD VENDOR → inline form
             if is_add_vendor and not is_add_product:
-                out = """
-### ➕ Add Vendor (empty fields – fill with your data)
-
-vendor_id (e.g., V050):
-vendor_tier (Bronze / Silver / Gold):
-vendor_region (Levant / GCC / Europe / North Africa / Asia):
-vendor_quality_score (-2 to 2):
-
-⬅️ These fields are intentionally empty.
-Please fill them using the **sidebar Add Vendor form** to save the vendor.
-"""
-                st.markdown(out)
-                st.session_state.rag_messages.append({"role": "assistant", "content": out})
+                st.markdown("### ➕ Add Vendor")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    vendor_id = st.text_input("vendor_id (e.g., V050)", key="vendor_id_add")
+                    vendor_tier = st.selectbox("vendor_tier", ["Bronze", "Silver", "Gold"], key="vendor_tier_add")
+                with col2:
+                    vendor_region = st.selectbox("vendor_region", ["Levant", "GCC", "Europe", "North Africa", "Asia"], key="vendor_region_add")
+                    vendor_quality_score = st.slider("vendor_quality_score (-2 to 2)", -2.0, 2.0, 0.0, key="vendor_quality_score_add")
+                
+                if st.button("Save Vendor", key="save_vendor_btn"):
+                    if vendor_id:
+                        try:
+                            result = add_vendor(vendor_id, vendor_tier, vendor_region, vendor_quality_score)
+                            st.success(f"✅ Vendor {vendor_id} saved successfully!")
+                            out = f"✅ Vendor **{vendor_id}** has been saved to the database."
+                            st.session_state.rag_messages.append({"role": "assistant", "content": out})
+                        except Exception as e:
+                            st.error(f"❌ Error saving vendor: {str(e)}")
+                            out = f"❌ Error saving vendor: {str(e)}"
+                            st.session_state.rag_messages.append({"role": "assistant", "content": out})
+                    else:
+                        st.warning("Please enter a vendor_id")
+                
                 st.stop()
 
-            # 2️⃣ ADD PRODUCT → empty fields only
+            # 2️⃣ ADD PRODUCT → inline form
             if is_add_product and not is_add_vendor:
-                out = """
-### ➕ Add Product (empty fields – fill with your data)
-
-date (YYYY-MM-DD):
-product_id (e.g., P00100):
-vendor_id (e.g., V050):
-category:
-sub_category:
-price_usd:
-discount_rate (0–1):
-ad_spend_usd:
-views:
-orders:
-gross_revenue_usd:
-returns:
-rating (1–5):
-rating_count:
-stock_units:
-avg_fulfillment_days:
-
-⬅️ These fields are intentionally empty.
-Please fill them using the **sidebar Add Product form** to save the product.
-"""
-                st.markdown(out)
-                st.session_state.rag_messages.append({"role": "assistant", "content": out})
+                st.markdown("### ➕ Add Product")
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    date = st.date_input("date", key="date_add")
+                    product_id = st.text_input("product_id (e.g., P00100)", key="product_id_add")
+                    vendor_id = st.text_input("vendor_id (e.g., V050)", key="vendor_id_product_add")
+                with col2:
+                    category = st.text_input("category", key="category_add")
+                    sub_category = st.text_input("sub_category", key="sub_category_add")
+                    price_usd = st.number_input("price_usd", min_value=0.0, key="price_usd_add")
+                with col3:
+                    discount_rate = st.slider("discount_rate (0–1)", 0.0, 1.0, 0.0, key="discount_rate_add")
+                    ad_spend_usd = st.number_input("ad_spend_usd", min_value=0.0, key="ad_spend_usd_add")
+                    views = st.number_input("views", min_value=0, step=1, key="views_add")
+                
+                col4, col5, col6 = st.columns(3)
+                with col4:
+                    orders = st.number_input("orders", min_value=0, step=1, key="orders_add")
+                    gross_revenue_usd = st.number_input("gross_revenue_usd", min_value=0.0, key="gross_revenue_usd_add")
+                    returns = st.number_input("returns", min_value=0, step=1, key="returns_add")
+                with col5:
+                    rating = st.slider("rating (1–5)", 1.0, 5.0, 3.0, key="rating_add")
+                    rating_count = st.number_input("rating_count", min_value=0, step=1, key="rating_count_add")
+                with col6:
+                    stock_units = st.number_input("stock_units", min_value=0, step=1, key="stock_units_add")
+                    avg_fulfillment_days = st.number_input("avg_fulfillment_days", min_value=0.0, key="avg_fulfillment_days_add")
+                
+                if st.button("Save Product", key="save_product_btn"):
+                    if product_id and vendor_id:
+                        try:
+                            result = add_product(
+                                date.isoformat(),
+                                product_id, vendor_id, category, sub_category,
+                                price_usd, discount_rate, ad_spend_usd,
+                                views, orders, gross_revenue_usd, returns,
+                                rating, rating_count, stock_units, avg_fulfillment_days
+                            )
+                            st.success(f"✅ Product {product_id} saved successfully!")
+                            out = f"✅ Product **{product_id}** has been saved to the database."
+                            st.session_state.rag_messages.append({"role": "assistant", "content": out})
+                        except Exception as e:
+                            st.error(f"❌ Error saving product: {str(e)}")
+                            out = f"❌ Error saving product: {str(e)}"
+                            st.session_state.rag_messages.append({"role": "assistant", "content": out})
+                    else:
+                        st.warning("Please enter product_id and vendor_id")
+                
                 st.stop()
 
             # 3️⃣ If user pastes filled fields → gentle reminder (NO RAG)
             if looks_like_filled_vendor or looks_like_filled_product:
-                out = "✅ I see filled values. To save data, please enter them in the **sidebar form**."
+                out = "✅ I see you mentioned field values. To add them to the database, please use the inline form above."
                 st.markdown(out)
                 st.session_state.rag_messages.append({"role": "assistant", "content": out})
                 st.stop()
