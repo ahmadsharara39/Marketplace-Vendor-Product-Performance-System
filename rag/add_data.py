@@ -6,7 +6,6 @@ from pathlib import Path
 from datetime import datetime
 from rag.db_config import insert_vendor, insert_product_raw, insert_marketplace_daily_raw, insert_marketplace_daily_clean, get_all_vendors
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 def add_vendor(vendor_id: str, vendor_tier: str, vendor_region: str, vendor_quality_score: float) -> dict:
@@ -184,8 +183,9 @@ def add_product(date: str, product_id: str, vendor_id: str, category: str, sub_c
             avg_fulfillment_days=avg_fulfillment_days,
             conversion_rate=conversion_rate,
             return_rate=return_rate,
-            net_revenue_usd=net_revenue_usd
+            net_revenue_usd=net_revenue_usd,
         )
+
 
         print("DEBUG: calling insert_marketplace_daily_clean", date, product_id, vendor_id)
         success = insert_marketplace_daily_clean(...)
