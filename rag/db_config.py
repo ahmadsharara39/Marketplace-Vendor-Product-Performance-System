@@ -8,10 +8,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Neon connection string
+# Neon connection string - check environment first, then Streamlit secrets
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is not set. Put it in .env")
+    try:
+        import streamlit as st
+        DATABASE_URL = st.secrets.get("DATABASE_URL")
+    except (ImportError, AttributeError, KeyError):
+        pass
+
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not set. Set it in .env locally or in Streamlit Cloud Secrets")
 
 def get_connection():
     """Get a connection to Neon PostgreSQL"""
