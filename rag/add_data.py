@@ -4,7 +4,7 @@ Module for adding vendors and products to the Neon PostgreSQL database
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
-from rag.db_config import insert_vendor, insert_product_raw, insert_marketplace_daily_raw, get_all_vendors
+from rag.db_config import insert_vendor, insert_product_raw, insert_marketplace_daily_raw, insert_marketplace_daily_clean, get_all_vendors
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -144,8 +144,8 @@ def add_product(date: str, product_id: str, vendor_id: str, category: str, sub_c
             avg_fulfillment_days=avg_fulfillment_days
         )
 
-        # 2) Insert into marketplace_daily_raw (fact)
-        success = insert_marketplace_daily_raw(
+        # 2) Insert into marketplace_daily_raw (fact - raw metrics)
+        insert_marketplace_daily_raw(
             date=date,
             product_id=product_id,
             vendor_id=vendor_id,
@@ -162,6 +162,29 @@ def add_product(date: str, product_id: str, vendor_id: str, category: str, sub_c
             rating_count=rating_count,
             stock_units=stock_units,
             avg_fulfillment_days=avg_fulfillment_days
+        )
+
+        # 3) Insert into marketplace_daily_clean (fact - with calculated metrics)
+        success = insert_marketplace_daily_clean(
+            date=date,
+            product_id=product_id,
+            vendor_id=vendor_id,
+            category=category,
+            sub_category=sub_category,
+            price_usd=price_usd,
+            discount_rate=discount_rate,
+            ad_spend_usd=ad_spend_usd,
+            views=views,
+            orders=orders,
+            gross_revenue_usd=gross_revenue_usd,
+            returns=returns,
+            rating=rating,
+            rating_count=rating_count,
+            stock_units=stock_units,
+            avg_fulfillment_days=avg_fulfillment_days,
+            conversion_rate=conversion_rate,
+            return_rate=return_rate,
+            net_revenue_usd=net_revenue_usd
         )
 
         if success:
