@@ -1,6 +1,8 @@
 import streamlit as st
 from rag_core import answer
-from add_data import add_vendor, add_product, get_vendor_suggestions, get_product_suggestions
+from add_data import add_vendor, add_product
+from db_config import get_all_vendors
+import datetime
 
 st.set_page_config(page_title="Marketplace RAG Chatbot", layout="wide")
 st.title("📊 Marketplace RAG Chatbot (Docs + AI Recommendations)")
@@ -9,20 +11,20 @@ st.caption("Ask questions about vendors, categories, performance tables, and rec
 
 # Sidebar for adding vendors/products
 with st.sidebar:
-    st.header("➕ Add Data to CSV")
-    st.caption("Fill the form below to add vendor or product data directly to the CSV files")
+    st.header("➕ Add Data to Database")
+    st.caption("Fill the form below to add vendor or product data directly to the database")
     tab1, tab2 = st.tabs(["Add Vendor", "Add Product"])
     
     with tab1:
-        st.subheader("Add New Vendor to vendors_master.csv")
+        st.subheader("Add New Vendor")
         
         with st.form("vendor_form", clear_on_submit=True):
-            vendor_id = st.text_input("Vendor ID (e.g., V050)")
+            vendor_id = st.text_input("Vendor ID (e.g., V050)", value="", placeholder="V050")
             vendor_tier = st.selectbox("Vendor Tier", ["Bronze", "Silver", "Gold"])
             vendor_region = st.selectbox("Vendor Region", ["Levant", "GCC", "Europe", "North Africa", "Asia"])
             vendor_quality_score = st.slider("Quality Score", -2.0, 2.0, 0.0, 0.1)
             
-            if st.form_submit_button("✓ Add Vendor to CSV", use_container_width=True):
+            if st.form_submit_button("✓ Add Vendor to Database", use_container_width=True):
                 if vendor_id and len(vendor_id) > 1:
                     result = add_vendor(vendor_id.upper(), vendor_tier, vendor_region, vendor_quality_score)
                     if result["success"]:
@@ -33,14 +35,27 @@ with st.sidebar:
                     st.error("Please enter a valid Vendor ID")
     
     with tab2:
-        st.subheader("Add New Product to synthetic_marketplace_daily_clean.csv")
+        st.subheader("Add New Product")
+        
+        # Get existing vendors from database for selection
+        try:
+            vendors_list = get_all_vendors()
+            vendor_ids = [v['vendor_id'] for v in vendors_list]
+        except:
+            vendor_ids = []
+            st.warning("Could not load vendors from database")
         
         with st.form("product_form", clear_on_submit=True):
-            date = st.date_input("Date")
-            product_id = st.text_input("Product ID (e.g., P00100)")
-            vendor_id = st.text_input("Vendor ID (e.g., V050)")
-            category = st.text_input("Category (e.g., Electronics)")
-            sub_category = st.text_input("Sub-Category (e.g., Laptops)")
+            date = st.date_input("Date", value=datetime.date.today())
+            product_id = st.text_input("Product ID (e.g., P00100)", value="", placeholder="P00100")
+            
+            if vendor_ids:
+                vendor_id = st.selectbox("Select Vendor", vendor_ids)
+            else:
+                vendor_id = st.text_input("Vendor ID (e.g., V050)", value="", placeholder="V050")
+            
+            category = st.text_input("Category (e.g., Electronics)", value="", placeholder="Electronics")
+            sub_category = st.text_input("Sub-Category (e.g., Laptops)", value="", placeholder="Laptops")
             price_usd = st.number_input("Price (USD)", min_value=0.01, value=0.0, step=1.0)
             discount_rate = st.slider("Discount Rate", 0.0, 1.0, 0.0, 0.01)
             ad_spend_usd = st.number_input("Ad Spend (USD)", min_value=0.0, value=0.0, step=1.0)
@@ -53,7 +68,7 @@ with st.sidebar:
             avg_fulfillment_days = st.number_input("Fulfillment Days", min_value=0.1, value=0.1, step=0.1)
             gross_revenue_usd = st.number_input("Gross Revenue (USD)", min_value=0.0, value=0.0, step=1.0)
             
-            if st.form_submit_button("✓ Add Product to CSV", use_container_width=True):
+            if st.form_submit_button("✓ Add Product to Database", use_container_width=True):
                 if product_id and len(product_id) > 1 and vendor_id and len(vendor_id) > 1:
                     result = add_product(
                         str(date), product_id.upper(), vendor_id.upper(), category, sub_category,
@@ -68,8 +83,9 @@ with st.sidebar:
                 else:
                     st.error("Please fill in all required fields")
 
+
 st.divider()
-st.info("💡 **To add a new vendor or product:** Use the '➕ Add Data to CSV' forms in the sidebar on the left. You'll see blank cells to fill in.")
+st.info("💡 **To add a new vendor or product:** Use the '➕ Add Data to Database' forms in the sidebar on the left. You'll see blank cells to fill in.")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -91,12 +107,12 @@ if prompt:
             st.markdown("""
 I see you want to add a vendor or product! 
 
-**👈 Use the sidebar on the left** to access the "➕ Add Data to CSV" forms:
+**👈 Use the sidebar on the left** to access the "➕ Add Data to Database" forms:
 
-- **Add Vendor Tab**: Fill in vendor ID, tier, region, and quality score → blank cells ready for input
-- **Add Product Tab**: Fill in all product details → blank cells ready for input
+- **Add Vendor Tab**: Fill in vendor ID, tier, region, and quality score → all fields are empty and ready for your input
+- **Add Product Tab**: Fill in all product details → all fields are empty and ready for your input
 
-The forms will automatically save your data to the CSV files.
+The forms will automatically save your data to the Neon database.
             """)
         else:
             with st.spinner("Retrieving and answering..."):

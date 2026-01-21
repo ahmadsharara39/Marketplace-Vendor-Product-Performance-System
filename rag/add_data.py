@@ -1,18 +1,16 @@
 """
-Module for adding vendors and products to the marketplace
+Module for adding vendors and products to the Neon PostgreSQL database
 """
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
+from db_config import insert_vendor, insert_product, get_all_vendors
 
 ROOT = Path(__file__).resolve().parents[1]
 
-VENDORS_FILE = ROOT / "vendors_master.csv"
-PRODUCTS_FILE = ROOT / "synthetic_marketplace_daily_clean.csv"
-
 def add_vendor(vendor_id: str, vendor_tier: str, vendor_region: str, vendor_quality_score: float) -> dict:
     """
-    Add a new vendor to the vendor master file.
+    Add a new vendor to the Neon database.
     
     Args:
         vendor_id: Unique vendor identifier (e.g., V001)
@@ -39,28 +37,23 @@ def add_vendor(vendor_id: str, vendor_tier: str, vendor_region: str, vendor_qual
         if not isinstance(vendor_quality_score, (int, float)) or vendor_quality_score < -2 or vendor_quality_score > 2:
             return {"success": False, "message": "vendor_quality_score must be numeric between -2 and 2"}
         
-        # Read existing vendors
-        df = pd.read_csv(VENDORS_FILE)
-        
         # Check if vendor already exists
-        if vendor_id in df["vendor_id"].values:
+        existing_vendors = get_all_vendors()
+        vendor_ids = [v['vendor_id'] for v in existing_vendors]
+        
+        if vendor_id in vendor_ids:
             return {"success": False, "message": f"vendor_id {vendor_id} already exists"}
         
-        # Add new vendor
-        new_vendor = pd.DataFrame([{
-            "vendor_id": vendor_id,
-            "vendor_tier": vendor_tier,
-            "vendor_region": vendor_region,
-            "vendor_quality_score": vendor_quality_score
-        }])
+        # Add new vendor to Neon
+        success = insert_vendor(vendor_id, vendor_tier, vendor_region, vendor_quality_score)
         
-        df = pd.concat([df, new_vendor], ignore_index=True)
-        df.to_csv(VENDORS_FILE, index=False)
-        
-        return {
-            "success": True,
-            "message": f"✅ Vendor {vendor_id} added successfully!\nTier: {vendor_tier}, Region: {vendor_region}, Quality Score: {vendor_quality_score}"
-        }
+        if success:
+            return {
+                "success": True,
+                "message": f"✅ Vendor {vendor_id} added successfully to Neon!\nTier: {vendor_tier}, Region: {vendor_region}, Quality Score: {vendor_quality_score}"
+            }
+        else:
+            return {"success": False, "message": "Failed to add vendor to database"}
     except Exception as e:
         return {"success": False, "message": f"Error adding vendor: {str(e)}"}
 
@@ -70,7 +63,7 @@ def add_product(date: str, product_id: str, vendor_id: str, category: str, sub_c
                 gross_revenue_usd: float, returns: int, rating: float, rating_count: int,
                 stock_units: int, avg_fulfillment_days: float) -> dict:
     """
-    Add a new product to the marketplace daily file.
+    Add a new product to the Neon database.
     
     Args:
         date: Date in YYYY-MM-DD format
@@ -104,8 +97,10 @@ def add_product(date: str, product_id: str, vendor_id: str, category: str, sub_c
             return {"success": False, "message": "date must be in YYYY-MM-DD format"}
         
         # Check vendor exists
-        vendors_df = pd.read_csv(VENDORS_FILE)
-        if vendor_id not in vendors_df["vendor_id"].values:
+        existing_vendors = get_all_vendors()
+        vendor_ids = [v['vendor_id'] for v in existing_vendors]
+        
+        if vendor_id not in vendor_ids:
             return {"success": False, "message": f"vendor_id {vendor_id} does not exist. Please add the vendor first."}
         
         # Validate numeric ranges
@@ -135,42 +130,18 @@ def add_product(date: str, product_id: str, vendor_id: str, category: str, sub_c
         return_rate = returns / orders if orders > 0 else 0
         net_revenue_usd = gross_revenue_usd - (returns * price_usd)
         
-        # Read existing products
-        df = pd.read_csv(PRODUCTS_FILE)
+        # Add new product to Neon
+        success = insert_product(
+            date, product_id, vendor_id, category, sub_category,
+            price_usd, discount_rate, ad_spend_usd, views, orders,
+            gross_revenue_usd, returns, rating, rating_count,
+            stock_units, avg_fulfillment_days
+        )
         
-        # Check if product already exists for this date
-        if ((df["date"] == date) & (df["product_id"] == product_id) & (df["vendor_id"] == vendor_id)).any():
-            return {"success": False, "message": f"Product {product_id} already exists for {date} with vendor {vendor_id}"}
-        
-        # Add new product
-        new_product = pd.DataFrame([{
-            "date": date,
-            "product_id": product_id,
-            "vendor_id": vendor_id,
-            "category": category,
-            "sub_category": sub_category,
-            "price_usd": price_usd,
-            "discount_rate": discount_rate,
-            "ad_spend_usd": ad_spend_usd,
-            "views": views,
-            "orders": orders,
-            "gross_revenue_usd": gross_revenue_usd,
-            "returns": returns,
-            "rating": rating,
-            "rating_count": rating_count,
-            "stock_units": stock_units,
-            "avg_fulfillment_days": avg_fulfillment_days,
-            "conversion_rate": conversion_rate,
-            "return_rate": return_rate,
-            "net_revenue_usd": net_revenue_usd
-        }])
-        
-        df = pd.concat([df, new_product], ignore_index=True)
-        df.to_csv(PRODUCTS_FILE, index=False)
-        
-        return {
-            "success": True,
-            "message": f"""✅ Product {product_id} added successfully!
+        if success:
+            return {
+                "success": True,
+                "message": f"""✅ Product {product_id} added successfully to Neon!
 Date: {date}
 Vendor: {vendor_id}
 Category: {category} > {sub_category}
@@ -178,32 +149,8 @@ Price: ${price_usd}
 Conversion Rate: {conversion_rate:.2%}
 Return Rate: {return_rate:.2%}
 Net Revenue: ${net_revenue_usd:.2f}"""
-        }
+            }
+        else:
+            return {"success": False, "message": "Failed to add product to database"}
     except Exception as e:
         return {"success": False, "message": f"Error adding product: {str(e)}"}
-
-
-def get_vendor_suggestions() -> dict:
-    """Get vendor count and tier distribution for reference"""
-    try:
-        df = pd.read_csv(VENDORS_FILE)
-        return {
-            "total_vendors": len(df),
-            "tiers": df["vendor_tier"].value_counts().to_dict(),
-            "regions": df["vendor_region"].value_counts().to_dict()
-        }
-    except Exception as e:
-        return {"error": str(e)}
-
-
-def get_product_suggestions() -> dict:
-    """Get product count and category distribution for reference"""
-    try:
-        df = pd.read_csv(PRODUCTS_FILE)
-        return {
-            "total_products": len(df),
-            "categories": df["category"].unique().tolist(),
-            "date_range": f"{df['date'].min()} to {df['date'].max()}"
-        }
-    except Exception as e:
-        return {"error": str(e)}
