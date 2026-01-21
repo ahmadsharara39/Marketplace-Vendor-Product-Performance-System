@@ -3,6 +3,7 @@ from rag.rag_core import answer
 from rag.add_data import add_vendor, add_product
 from rag.db_config import get_all_vendors
 import datetime
+from rag.intent import detect_intent
 
 st.set_page_config(page_title="Marketplace RAG Chatbot", layout="wide")
 st.title("📊 Marketplace RAG Chatbot (Docs + AI Recommendations)")
@@ -134,72 +135,26 @@ if prompt:
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        prompt_lower = prompt.lower().strip()
+        intent_out = detect_intent(prompt)
+        intent = intent_out.get("intent", "qa")
 
-    add_vendor_keywords = [
-        "add vendor", "add a vendor", "add new vendor", "add a new vendor",
-        "create vendor", "new vendor", "onboard vendor"
-    ]
-    add_product_keywords = [
-        "add product", "add a product", "add new product", "add a new product",
-        "create product", "new product", "onboard product"
-    ]
-
-    is_add_vendor = any(k in prompt_lower for k in add_vendor_keywords)
-    is_add_product = any(k in prompt_lower for k in add_product_keywords)
-
-    looks_like_add_request = ("add" in prompt_lower) and ("vendor" in prompt_lower or "product" in prompt_lower)
 
     # ✅ HARD EXIT: never call OpenAI when user is adding data
-    if is_add_vendor and not is_add_product:
-        st.markdown("""
-### ➕ Add Vendor (empty fields)
-
-**vendor_id (e.g., V050):**  
-**vendor_tier (Bronze / Silver / Gold):**  
-**vendor_region (Levant / GCC / Europe / North Africa / Asia):**  
-**vendor_quality_score (-2 to 2):**  
-
-✅ Fill these in the left sidebar → **Add Vendor** tab, then click **✓ Add Vendor to Database**.
-""")
+    if intent == "add_vendor":
+        st.markdown("""... vendor template ...""")
         st.session_state.messages[-1] = {"role": "assistant", "content": "Vendor add template shown."}
         st.stop()
 
-    if is_add_product and not is_add_vendor:
-        st.markdown("""
-### ➕ Add Product (empty fields)
-
-**date (YYYY-MM-DD):**  
-**product_id (e.g., P00100):**  
-**vendor_id (e.g., V050):**  
-**category:**  
-**sub_category:**  
-**price_usd:**  
-**discount_rate (0–1):**  
-**ad_spend_usd:**  
-**views:**  
-**orders:**  
-**gross_revenue_usd:**  
-**returns:**  
-**rating (1–5):**  
-**rating_count:**  
-**stock_units:**  
-**avg_fulfillment_days:**  
-
-✅ Fill these in the left sidebar → **Add Product** tab, then click **✓ Add Product to Database**.
-""")
+    if intent == "add_product":
+        st.markdown("""... product template ...""")
         st.session_state.messages[-1] = {"role": "assistant", "content": "Product add template shown."}
         st.stop()
 
-    if looks_like_add_request and not (is_add_vendor or is_add_product):
-        st.markdown("""
-Do you want to add a **vendor** or a **product**?
-
-- Type **add vendor**
-- Or type **add product**
-""")
+    if intent == "ambiguous":
+        st.markdown("""Do you want to add a **vendor** or a **product**?""")
         st.session_state.messages[-1] = {"role": "assistant", "content": "Asked to choose vendor vs product."}
         st.stop()
+
 
     # Normal RAG flow
     with st.spinner("Retrieving and answering..."):

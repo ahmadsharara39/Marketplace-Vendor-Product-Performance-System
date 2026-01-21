@@ -254,6 +254,27 @@ def insert_vendor(vendor_id: str, vendor_tier: str, vendor_region: str, vendor_q
 #         cur.close()
 #         conn.close()
 
+def get_last_vendor():
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute("SELECT * FROM vendors ORDER BY created_at DESC LIMIT 1")
+        return cur.fetchone()
+    finally:
+        cur.close()
+        conn.close()
+
+def get_last_product_raw():
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute("SELECT * FROM products_raw ORDER BY created_at DESC LIMIT 1")
+        return cur.fetchone()
+    finally:
+        cur.close()
+        conn.close()
+
+
 def get_all_vendors():
     """Get all vendors from database"""
     conn = get_connection()

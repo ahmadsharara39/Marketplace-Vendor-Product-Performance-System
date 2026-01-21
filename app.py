@@ -3,6 +3,7 @@ import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt
 from datetime import datetime
+from rag.intent import detect_intent
 
 st.set_page_config(page_title="Marketplace Performance Dashboard", layout="wide")
 
@@ -39,19 +40,21 @@ if mode == "RAG Chatbot":
             st.markdown(prompt)
 
         with st.chat_message("assistant"):
-            prompt_lower = prompt.lower().strip()
+            intent_out = detect_intent(prompt)
+            intent = intent_out.get("intent", "qa")
 
-            is_add_vendor = "vendor" in prompt_lower and "add" in prompt_lower
-            is_add_product = "product" in prompt_lower and "add" in prompt_lower
 
-            if is_add_vendor and not is_add_product:
+            if intent == "add_vendor":
                 st.session_state.show_add_vendor_form = True
                 st.session_state.show_add_product_form = False
                 st.markdown("### ➕ Add Vendor\nUse the form below to add a new vendor.")
-            elif is_add_product and not is_add_vendor:
+            elif intent == "add_product":
                 st.session_state.show_add_product_form = True
                 st.session_state.show_add_vendor_form = False
                 st.markdown("### ➕ Add Product\nUse the form below to add a new product.")
+            elif intent == "ambiguous":
+                st.markdown("Do you want to add a **vendor** or a **product**?")
+
     
     # === FORMS OUTSIDE CHAT MESSAGE (stable rendering) ===
     
@@ -246,13 +249,11 @@ if mode == "RAG Chatbot":
     # === NORMAL RAG FLOW (only if not in form mode) ===
     if prompt and not st.session_state.show_add_vendor_form and not st.session_state.show_add_product_form:
         with st.chat_message("assistant"):
-            prompt_lower = prompt.lower().strip()
-
-            is_add_vendor = "vendor" in prompt_lower and "add" in prompt_lower
-            is_add_product = "product" in prompt_lower and "add" in prompt_lower
+            intent_out = detect_intent(prompt)
+            intent = intent_out.get("intent", "qa")
 
             # Skip RAG if it's an add request
-            if not (is_add_vendor or is_add_product):
+            if intent == "qa":
                 with st.spinner("Retrieving and answering..."):
                     out, contexts = answer(prompt)
                     st.markdown(out)
