@@ -139,7 +139,7 @@ if prompt:
         
         # More comprehensive keywords to detect add vendor/product requests
         add_vendor_keywords = [
-            "add vendor", "add a vendor", "new vendor", "create vendor", 
+            "add new vendor", "add vendor", "add a vendor", "new vendor", "create vendor", 
             "want to add vendor", "i want to add vendor", "adding vendor",
             "how to add vendor", "add new vendor", "create new vendor",
             "onboard vendor", "add vendor to marketplace", "vendor to the marketplace",
@@ -149,7 +149,7 @@ if prompt:
             "current vendor landscape", "vendor evaluation", "vendor addition"
         ]
         add_product_keywords = [
-            "add product", "add a product", "new product", "create product", 
+            "add new product", "add product", "add a product", "new product", "create product", 
             "want to add product", "i want to add product", "adding product",
             "how to add product", "add new product", "create new product",
             "onboard product", "add product to marketplace"
@@ -163,46 +163,58 @@ if prompt:
         looks_like_vendor_rag = "current vendor" in prompt_lower or "vendor overview" in prompt_lower
         looks_like_add_request = "to add" in prompt_lower and ("vendor" in prompt_lower or "product" in prompt_lower)
         
-        if is_add_vendor or is_add_product or looks_like_vendor_rag or looks_like_add_request:
+        if is_add_vendor and not is_add_product:
             st.markdown("""
-✅ **Perfect! I'll help you add a new vendor or product to the marketplace database.**
+### ➕ Add Vendor (empty fields)
 
-**👈 Look at the left sidebar** - you'll see the **"➕ Add Data to Database"** panel with two tabs:
+**vendor_id (e.g., V050):**  
+**vendor_tier (Bronze / Silver / Gold):**  
+**vendor_region (Levant / GCC / Europe / North Africa / Asia):**  
+**vendor_quality_score (-2 to 2):**  
 
-### 📝 **Add Vendor Tab** - Empty fields to fill in:
-- **Vendor ID** (e.g., V050)
-- **Vendor Tier** (Bronze, Silver, or Gold)
-- **Vendor Region** (Levant, GCC, Europe, North Africa, or Asia)
-- **Quality Score** (slider from -2.0 to 2.0)
-- Click **"✓ Add Vendor to Database"** to save
+✅ Fill these in the left sidebar → **Add Vendor** tab, then click **✓ Add Vendor to Database**.
+""")
 
-### 📦 **Add Product Tab** - Empty fields to fill in:
-- **Date** (today's date or any date)
-- **Product ID** (e.g., P00100)
-- **Vendor** (select from dropdown)
-- **Category** (e.g., Electronics)
-- **Sub-Category** (e.g., Laptops)
-- **Price** (in USD)
-- **Discount Rate** (0-100%)
-- **Ad Spend** (in USD)
-- **Views, Orders, Returns** (metrics)
-- **Rating** (1-5 stars)
-- **Rating Count** (number of ratings)
-- **Stock Units** (inventory)
-- **Fulfillment Days** (delivery time)
-- **Gross Revenue** (in USD)
-- Click **"✓ Add Product to Database"** to save
+elif is_add_product and not is_add_vendor:
+    st.markdown("""
+### ➕ Add Product (empty fields)
 
-**All fields are completely empty and ready for your data. Just fill in and submit!**
-            """)
-        else:
-            with st.spinner("Retrieving and answering..."):
-                out, contexts = answer(prompt)
-                st.markdown(out)
+**date (YYYY-MM-DD):**  
+**product_id (e.g., P00100):**  
+**vendor_id (e.g., V050):**  
+**category:**  
+**sub_category:**  
+**price_usd:**  
+**discount_rate (0–1):**  
+**ad_spend_usd:**  
+**views:**  
+**orders:**  
+**gross_revenue_usd:**  
+**returns:**  
+**rating (1–5):**  
+**rating_count:**  
+**stock_units:**  
+**avg_fulfillment_days:**  
 
-                with st.expander("Sources used"):
-                    for i, c in enumerate(contexts, start=1):
-                        st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
-                        st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
-            
-            st.session_state.messages[-1] = {"role": "assistant", "content": out}
+✅ Fill these in the left sidebar → **Add Product** tab, then click **✓ Add Product to Database**.
+""")
+
+elif (looks_like_vendor_rag or looks_like_add_request) and not (is_add_vendor or is_add_product):
+    st.markdown("""
+Do you want to add a **vendor** or a **product**?
+
+- Type **add vendor**
+- Or type **add product**
+""")
+
+else:
+    with st.spinner("Retrieving and answering..."):
+        out, contexts = answer(prompt)
+        st.markdown(out)
+
+        with st.expander("Sources used"):
+            for i, c in enumerate(contexts, start=1):
+                st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
+                st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
+
+    st.session_state.messages[-1] = {"role": "assistant", "content": out}
