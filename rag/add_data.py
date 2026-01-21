@@ -186,11 +186,6 @@ def add_product(date: str, product_id: str, vendor_id: str, category: str, sub_c
             net_revenue_usd=net_revenue_usd,
         )
 
-
-        print("DEBUG: calling insert_marketplace_daily_clean", date, product_id, vendor_id)
-        success = insert_marketplace_daily_clean(...)
-        print("DEBUG: insert_marketplace_daily_clean returned", success)
-
         if success:
             return {
                 "success": True,
