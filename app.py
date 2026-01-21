@@ -83,8 +83,8 @@ if mode == "RAG Chatbot":
             if submitted:
                 if vendor_id:
                     try:
-                        result = add_vendor(vendor_id.strip().upper(), vendor_tier, vendor_region, vendor_quality_score)
                         saved_vid = vendor_id.strip().upper()
+                        result = add_vendor(saved_vid, vendor_tier, vendor_region, vendor_quality_score)
                         st.success(f"✅ Vendor {saved_vid} saved successfully!")
                         out = f"✅ Vendor **{saved_vid}** has been saved to the database."
                         st.session_state.rag_messages.append({"role": "assistant", "content": out})
@@ -130,49 +130,52 @@ if mode == "RAG Chatbot":
 
             
             with col2:
-                # Category dropdown with add new option
+                # --- Category dropdown ---
                 category_options = categories + ["➕ Add New Category"]
                 category = st.selectbox("category", category_options, key="category_add")
-                
-                new_category_name = None
+
+                # Only show "new category name" input if user chose add new
                 if category == "➕ Add New Category":
                     new_category_name = st.text_input("Enter new category name", key="new_category_input")
-                    if new_category_name:
+                    if new_category_name and new_category_name.strip():
                         new_category_name = new_category_name.strip()
                         if category_exists(new_category_name):
                             st.warning(f"⚠️ Category '{new_category_name}' already exists")
                         else:
                             st.success(f"✅ New category '{new_category_name}' will be created")
-                        category = new_category_name
+                        category = new_category_name  # use typed value as the category
 
+                # --- Compute subcategories AFTER category is finalized ---
+                subcategories = get_subcategories_for_category(category) if category else []
+
+                # --- Reset subcategory selection when category changes (optional but good UX) ---
                 if "prev_category" not in st.session_state:
                     st.session_state.prev_category = None
 
                 if category != st.session_state.prev_category:
-                    st.session_state.sub_category_add = "➕ Add New Sub-Category"
+                    if subcategories:
+                        st.session_state.sub_category_add = subcategories[0]  # default to first existing
+                    else:
+                        st.session_state.sub_category_add = "➕ Add New Sub-Category"
                     st.session_state.prev_category = category
 
-                
-                # Subcategory dropdown (dynamically loaded based on category)
-                subcategories = get_subcategories_for_category(category) if category and category != "➕ Add New Category" else []
+                # --- Subcategory dropdown ---
                 sub_category_options = subcategories + ["➕ Add New Sub-Category"]
                 sub_category = st.selectbox("sub_category", sub_category_options, key="sub_category_add")
-                
-                new_subcategory_name = None
+
+                # Only show "new subcategory name" input if user chose add new
                 if sub_category == "➕ Add New Sub-Category":
                     new_subcategory_name = st.text_input("Enter new sub-category name", key="new_subcategory_input")
-                    if new_subcategory_name:
+                    if new_subcategory_name and new_subcategory_name.strip():
                         new_subcategory_name = new_subcategory_name.strip()
-                        if not category:
-                            st.warning("Please select a category first.")
+                        if subcategory_exists(category, new_subcategory_name):
+                            st.warning(f"⚠️ Sub-category '{new_subcategory_name}' already exists in '{category}'")
                         else:
-                            if subcategory_exists(category, new_subcategory_name):
-                                st.warning(f"⚠️ Sub-category '{new_subcategory_name}' already exists in '{category}'")
-                            else:
-                                st.success(f"✅ New sub-category '{new_subcategory_name}' will be created")
-                            sub_category = new_subcategory_name
-                
+                            st.success(f"✅ New sub-category '{new_subcategory_name}' will be created")
+                        sub_category = new_subcategory_name
+
                 price_usd = st.number_input("price_usd", min_value=0.0, key="price_usd_add")
+
             
             with col3:
                 discount_rate = st.slider("discount_rate (0–1)", 0.0, 1.0, 0.0, key="discount_rate_add")
@@ -205,33 +208,39 @@ if mode == "RAG Chatbot":
                 pid = product_id.strip().upper() if product_id else ""
                 vid = vendor_id.strip().upper() if vendor_id else ""
 
-                if pid and vid and category and sub_category:
-                    if product_exists(pid):
-                        st.error(f"❌ Product {pid} already exists in the database.")
-                    elif not vendor_exists(vid):
-                        st.error(f"❌ Vendor {vid} does not exist. Please add this vendor first.")
-                    else:
-                        try:
-                            result = add_product(
-                                date.isoformat(),
-                                pid, vid, category, sub_category,
-                                price_usd, discount_rate, ad_spend_usd,
-                                views, orders, gross_revenue_usd, returns,
-                                rating, rating_count, stock_units, avg_fulfillment_days
-                            )
-
-                            if result.get("success"):
-                                st.success(result.get("message", f"✅ Product {pid} saved successfully!"))
-                                st.session_state.rag_messages.append({"role": "assistant", "content": f"✅ Product **{pid}** has been saved to the database."})
-                                st.session_state.show_add_product_form = False
-                                st.rerun()
-                            else:
-                                st.error(result.get("message", "❌ Failed to save product."))
-
-                        except Exception as e:
-                            st.error(f"❌ Error saving product: {str(e)}")
-                else:
+                # Block saving placeholder options
+                if category == "➕ Add New Category":
+                    st.warning("Please enter a new category name.")
+                elif sub_category == "➕ Add New Sub-Category":
+                    st.warning("Please enter a new sub-category name.")
+                elif not (pid and vid and category and sub_category):
                     st.warning("Please fill in all required fields: product_id, vendor_id, category, and sub_category")
+                elif product_exists(pid):
+                    st.error(f"❌ Product {pid} already exists in the database.")
+                elif not vendor_exists(vid):
+                    st.error(f"❌ Vendor {vid} does not exist. Please add this vendor first.")
+                else:
+                    try:
+                        result = add_product(
+                            date.isoformat(),
+                            pid, vid, category, sub_category,
+                            price_usd, discount_rate, ad_spend_usd,
+                            views, orders, gross_revenue_usd, returns,
+                            rating, rating_count, stock_units, avg_fulfillment_days
+                        )
+
+                        if result.get("success"):
+                            st.success(result.get("message", f"✅ Product {pid} saved successfully!"))
+                            st.session_state.rag_messages.append(
+                                {"role": "assistant", "content": f"✅ Product **{pid}** has been saved to the database."}
+                            )
+                            st.session_state.show_add_product_form = False
+                            st.rerun()
+                        else:
+                            st.error(result.get("message", "❌ Failed to save product."))
+
+                    except Exception as e:
+                        st.error(f"❌ Error saving product: {str(e)}")
 
     
     # === NORMAL RAG FLOW (only if not in form mode) ===
