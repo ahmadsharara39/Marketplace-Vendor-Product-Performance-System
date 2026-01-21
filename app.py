@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 st.set_page_config(page_title="Marketplace Performance Dashboard", layout="wide")
 
@@ -14,7 +15,8 @@ if mode == "RAG Chatbot":
 
     # Import only when needed (keeps dashboard fast)
     from rag.rag_core import answer
-    from rag.add_data import add_vendor, add_product   # if you want chat-driven inserts later
+    from rag.add_data import add_vendor, add_product
+    from rag.db_config import get_all_categories, get_subcategories_for_category, vendor_exists
 
     if "rag_messages" not in st.session_state:
         st.session_state.rag_messages = []
@@ -98,17 +100,44 @@ if mode == "RAG Chatbot":
         st.divider()
         st.subheader("Add Product")
         
+        # Load categories and subcategories
+        categories = get_all_categories()
+        
         product_form = st.form("add_product_form", clear_on_submit=False)
         with product_form:
             col1, col2, col3 = st.columns(3)
             with col1:
-                date = st.date_input("date", key="date_add")
+                date = st.date_input("date", value=datetime.now().date(), key="date_add")
                 product_id = st.text_input("product_id (e.g., P00100)", key="product_id_add")
+                
+                # Vendor ID with validation
                 vendor_id = st.text_input("vendor_id (e.g., V050)", key="vendor_id_product_add")
+                if vendor_id:
+                    if vendor_exists(vendor_id):
+                        st.success(f"✅ Vendor {vendor_id} exists")
+                    else:
+                        st.error(f"❌ Vendor {vendor_id} not found")
+            
             with col2:
-                category = st.text_input("category", key="category_add")
-                sub_category = st.text_input("sub_category", key="sub_category_add")
+                # Category dropdown with add new option
+                category_options = categories + ["➕ Add New Category"]
+                category = st.selectbox("category", category_options, key="category_add")
+                
+                if category == "➕ Add New Category":
+                    new_category = st.text_input("Enter new category name", key="new_category_input")
+                    category = new_category if new_category else "Other"
+                
+                # Subcategory dropdown (dynamically loaded based on category)
+                subcategories = get_subcategories_for_category(category) if category and category != "➕ Add New Category" else []
+                sub_category_options = subcategories + ["➕ Add New Sub-Category"]
+                sub_category = st.selectbox("sub_category", sub_category_options, key="sub_category_add")
+                
+                if sub_category == "➕ Add New Sub-Category":
+                    new_subcategory = st.text_input("Enter new sub-category name", key="new_subcategory_input")
+                    sub_category = new_subcategory if new_subcategory else "Other"
+                
                 price_usd = st.number_input("price_usd", min_value=0.0, key="price_usd_add")
+            
             with col3:
                 discount_rate = st.slider("discount_rate (0–1)", 0.0, 1.0, 0.0, key="discount_rate_add")
                 ad_spend_usd = st.number_input("ad_spend_usd", min_value=0.0, key="ad_spend_usd_add")
@@ -137,24 +166,27 @@ if mode == "RAG Chatbot":
                 st.rerun()
             
             if product_submitted:
-                if product_id and vendor_id:
-                    try:
-                        result = add_product(
-                            date.isoformat(),
-                            product_id, vendor_id, category, sub_category,
-                            price_usd, discount_rate, ad_spend_usd,
-                            views, orders, gross_revenue_usd, returns,
-                            rating, rating_count, stock_units, avg_fulfillment_days
-                        )
-                        st.success(f"✅ Product {product_id} saved successfully!")
-                        out = f"✅ Product **{product_id}** has been saved to the database."
-                        st.session_state.rag_messages.append({"role": "assistant", "content": out})
-                        st.session_state.show_add_product_form = False
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error saving product: {str(e)}")
+                if product_id and vendor_id and category and sub_category:
+                    if not vendor_exists(vendor_id):
+                        st.error(f"❌ Vendor {vendor_id} does not exist. Please add this vendor first.")
+                    else:
+                        try:
+                            result = add_product(
+                                date.isoformat(),
+                                product_id, vendor_id, category, sub_category,
+                                price_usd, discount_rate, ad_spend_usd,
+                                views, orders, gross_revenue_usd, returns,
+                                rating, rating_count, stock_units, avg_fulfillment_days
+                            )
+                            st.success(f"✅ Product {product_id} saved successfully!")
+                            out = f"✅ Product **{product_id}** has been saved to the database."
+                            st.session_state.rag_messages.append({"role": "assistant", "content": out})
+                            st.session_state.show_add_product_form = False
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Error saving product: {str(e)}")
                 else:
-                    st.warning("Please enter product_id and vendor_id")
+                    st.warning("Please fill in all required fields: product_id, vendor_id, category, and sub_category")
     
     # === NORMAL RAG FLOW (only if not in form mode) ===
     if prompt and not st.session_state.show_add_vendor_form and not st.session_state.show_add_product_form:

@@ -276,6 +276,42 @@ def get_all_products():
         cur.close()
         conn.close()
 
+def get_all_categories():
+    """Get all unique categories from products_raw"""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    try:
+        cur.execute("SELECT DISTINCT category FROM products_raw ORDER BY category")
+        return [row[0] for row in cur.fetchall() if row[0]]
+    finally:
+        cur.close()
+        conn.close()
+
+def get_subcategories_for_category(category: str):
+    """Get all subcategories for a given category"""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    try:
+        cur.execute("SELECT DISTINCT sub_category FROM products_raw WHERE category = %s ORDER BY sub_category", (category,))
+        return [row[0] for row in cur.fetchall() if row[0]]
+    finally:
+        cur.close()
+        conn.close()
+
+def vendor_exists(vendor_id: str) -> bool:
+    """Check if a vendor exists in the database"""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    try:
+        cur.execute("SELECT 1 FROM vendors WHERE vendor_id = %s", (vendor_id,))
+        return cur.fetchone() is not None
+    finally:
+        cur.close()
+        conn.close()
+
 def insert_product_raw(product_id: str, vendor_id: str, category: str, sub_category: str,
                        price_usd: float, rating: float, rating_count: int,
                        avg_fulfillment_days: float) -> bool:
