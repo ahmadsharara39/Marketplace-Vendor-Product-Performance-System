@@ -136,17 +136,44 @@ if prompt:
     with st.chat_message("assistant"):
         # Check if user is asking about adding vendor or product
         prompt_lower = prompt.lower()
-        if any(keyword in prompt_lower for keyword in ["add vendor", "add product", "add a vendor", "add a product", "new vendor", "new product", "how to add"]):
+        
+        # Keywords to detect add vendor/product requests
+        add_vendor_keywords = ["add vendor", "add a vendor", "new vendor", "create vendor", "want to add vendor", "i want to add vendor"]
+        add_product_keywords = ["add product", "add a product", "new product", "create product", "want to add product", "i want to add product"]
+        
+        is_add_vendor = any(keyword in prompt_lower for keyword in add_vendor_keywords)
+        is_add_product = any(keyword in prompt_lower for keyword in add_product_keywords)
+        
+        if is_add_vendor or is_add_product:
             st.markdown("""
-I see you want to add a vendor or product! 
+✅ **Great! I can help you add a new vendor or product to the database.**
 
-**👈 Use the sidebar on the left** to access the "➕ Add Data to Database" forms:
+**👈 Look at the left sidebar** - you'll see the **"➕ Add Data to Database"** panel with two tabs:
 
-- **Add Vendor Tab**: Fill in vendor ID, tier, region, and quality score → all fields are empty and ready for your input
-- **Add Product Tab**: Fill in all product details → all fields are empty and ready for your input
+### 📝 Add Vendor Tab
+Fill in these **empty fields**:
+- **Vendor ID** - e.g., V050
+- **Vendor Tier** - Select: Bronze, Silver, or Gold
+- **Vendor Region** - Select: Levant, GCC, Europe, North Africa, or Asia
+- **Quality Score** - Use the slider (-2.0 to 2.0)
+- Then click **"✓ Add Vendor to Database"**
 
-The forms will automatically save your data to the Neon database.
+### 📦 Add Product Tab
+Fill in these **empty fields**:
+- **Date** - Select today's date
+- **Product ID** - e.g., P00100
+- **Vendor** - Select from existing vendors
+- **Category & Sub-Category** - e.g., Electronics, Laptops
+- **Price, Discount Rate, Ad Spend** - Enter the values
+- **Views, Orders, Returns** - Enter metrics
+- **Rating & Rating Count** - Enter ratings
+- **Stock Units, Fulfillment Days, Revenue** - Enter the values
+- Then click **"✓ Add Product to Database"**
+
+**All fields start completely empty - just fill in your information and click submit!**
             """)
+            # Add helpful message to session
+            st.session_state.messages[-1] = {"role": "assistant", "content": "Added vendor/product instructions"}
         else:
             with st.spinner("Retrieving and answering..."):
                 out, contexts = answer(prompt)
@@ -156,5 +183,5 @@ The forms will automatically save your data to the Neon database.
                     for i, c in enumerate(contexts, start=1):
                         st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
                         st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
-
-    st.session_state.messages.append({"role": "assistant", "content": ""})
+            
+            st.session_state.messages[-1] = {"role": "assistant", "content": out}
