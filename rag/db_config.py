@@ -312,6 +312,42 @@ def vendor_exists(vendor_id: str) -> bool:
         cur.close()
         conn.close()
 
+def product_exists(product_id: str) -> bool:
+    """Check if a product exists in products_raw"""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    try:
+        cur.execute("SELECT 1 FROM products_raw WHERE product_id = %s", (product_id,))
+        return cur.fetchone() is not None
+    finally:
+        cur.close()
+        conn.close()
+
+def category_exists(category: str) -> bool:
+    """Check if a category exists in products_raw"""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    try:
+        cur.execute("SELECT 1 FROM products_raw WHERE category = %s", (category,))
+        return cur.fetchone() is not None
+    finally:
+        cur.close()
+        conn.close()
+
+def subcategory_exists(category: str, sub_category: str) -> bool:
+    """Check if a subcategory exists for a given category"""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    try:
+        cur.execute("SELECT 1 FROM products_raw WHERE category = %s AND sub_category = %s", (category, sub_category))
+        return cur.fetchone() is not None
+    finally:
+        cur.close()
+        conn.close()
+
 def insert_product_raw(product_id: str, vendor_id: str, category: str, sub_category: str,
                        price_usd: float, rating: float, rating_count: int,
                        avg_fulfillment_days: float) -> bool:

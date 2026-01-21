@@ -16,7 +16,7 @@ if mode == "RAG Chatbot":
     # Import only when needed (keeps dashboard fast)
     from rag.rag_core import answer
     from rag.add_data import add_vendor, add_product
-    from rag.db_config import get_all_categories, get_subcategories_for_category, vendor_exists
+    from rag.db_config import get_all_categories, get_subcategories_for_category, vendor_exists, product_exists, category_exists, subcategory_exists
 
     if "rag_messages" not in st.session_state:
         st.session_state.rag_messages = []
@@ -110,6 +110,13 @@ if mode == "RAG Chatbot":
                 date = st.date_input("date", value=datetime.now().date(), key="date_add")
                 product_id = st.text_input("product_id (e.g., P00100)", key="product_id_add")
                 
+                # Product ID validation
+                if product_id:
+                    if product_exists(product_id):
+                        st.error(f"❌ Product {product_id} already exists")
+                    else:
+                        st.success(f"✅ Product {product_id} is available")
+                
                 # Vendor ID with validation
                 vendor_id = st.text_input("vendor_id (e.g., V050)", key="vendor_id_product_add")
                 if vendor_id:
@@ -123,18 +130,30 @@ if mode == "RAG Chatbot":
                 category_options = categories + ["➕ Add New Category"]
                 category = st.selectbox("category", category_options, key="category_add")
                 
+                new_category_name = None
                 if category == "➕ Add New Category":
-                    new_category = st.text_input("Enter new category name", key="new_category_input")
-                    category = new_category if new_category else "Other"
+                    new_category_name = st.text_input("Enter new category name", key="new_category_input")
+                    if new_category_name:
+                        if category_exists(new_category_name):
+                            st.warning(f"⚠️ Category '{new_category_name}' already exists")
+                        else:
+                            st.success(f"✅ New category '{new_category_name}' will be created")
+                        category = new_category_name
                 
                 # Subcategory dropdown (dynamically loaded based on category)
                 subcategories = get_subcategories_for_category(category) if category and category != "➕ Add New Category" else []
                 sub_category_options = subcategories + ["➕ Add New Sub-Category"]
                 sub_category = st.selectbox("sub_category", sub_category_options, key="sub_category_add")
                 
+                new_subcategory_name = None
                 if sub_category == "➕ Add New Sub-Category":
-                    new_subcategory = st.text_input("Enter new sub-category name", key="new_subcategory_input")
-                    sub_category = new_subcategory if new_subcategory else "Other"
+                    new_subcategory_name = st.text_input("Enter new sub-category name", key="new_subcategory_input")
+                    if new_subcategory_name:
+                        if subcategory_exists(category, new_subcategory_name):
+                            st.warning(f"⚠️ Sub-category '{new_subcategory_name}' already exists in '{category}'")
+                        else:
+                            st.success(f"✅ New sub-category '{new_subcategory_name}' will be created")
+                        sub_category = new_subcategory_name
                 
                 price_usd = st.number_input("price_usd", min_value=0.0, key="price_usd_add")
             
@@ -167,7 +186,9 @@ if mode == "RAG Chatbot":
             
             if product_submitted:
                 if product_id and vendor_id and category and sub_category:
-                    if not vendor_exists(vendor_id):
+                    if product_exists(product_id):
+                        st.error(f"❌ Product {product_id} already exists in the database.")
+                    elif not vendor_exists(vendor_id):
                         st.error(f"❌ Vendor {vendor_id} does not exist. Please add this vendor first.")
                     else:
                         try:
