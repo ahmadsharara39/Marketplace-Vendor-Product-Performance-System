@@ -4,19 +4,14 @@ Database configuration and connection management for Neon PostgreSQL
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
 
 # Neon connection string - check environment first, then Streamlit secrets
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    try:
-        import streamlit as st
-        DATABASE_URL = st.secrets.get("DATABASE_URL")
-    except (ImportError, AttributeError, KeyError):
-        pass
-
 def get_connection():
     db_url = os.getenv("DATABASE_URL")
     if not db_url:
@@ -30,11 +25,6 @@ def get_connection():
         raise RuntimeError("DATABASE_URL is not set (env var or Streamlit secrets).")
 
     return psycopg2.connect(db_url, sslmode="require")
-
-
-def get_connection():
-    """Get a connection to Neon PostgreSQL"""
-    return psycopg2.connect(DATABASE_URL)
 
 def init_database():
     """Initialize database schema"""

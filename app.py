@@ -83,9 +83,10 @@ if mode == "RAG Chatbot":
             if submitted:
                 if vendor_id:
                     try:
-                        result = add_vendor(vendor_id, vendor_tier, vendor_region, vendor_quality_score)
-                        st.success(f"✅ Vendor {vendor_id} saved successfully!")
-                        out = f"✅ Vendor **{vendor_id}** has been saved to the database."
+                        result = add_vendor(vendor_id.strip().upper(), vendor_tier, vendor_region, vendor_quality_score)
+                        saved_vid = vendor_id.strip().upper()
+                        st.success(f"✅ Vendor {saved_vid} saved successfully!")
+                        out = f"✅ Vendor **{saved_vid}** has been saved to the database."
                         st.session_state.rag_messages.append({"role": "assistant", "content": out})
                         st.session_state.show_add_vendor_form = False
                         st.rerun()
@@ -101,7 +102,7 @@ if mode == "RAG Chatbot":
         st.subheader("Add Product")
         
         # Load categories and subcategories
-        categories = get_all_categories()
+        categories = get_all_categories() or []
         
         product_form = st.form("add_product_form", clear_on_submit=False)
         with product_form:
@@ -112,18 +113,21 @@ if mode == "RAG Chatbot":
                 
                 # Product ID validation
                 if product_id:
-                    if product_exists(product_id):
-                        st.error(f"❌ Product {product_id} already exists")
+                    pid = product_id.strip().upper()
+                    if product_exists(pid):
+                        st.error(f"❌ Product {pid} already exists")
                     else:
-                        st.success(f"✅ Product {product_id} is available")
-                
-                # Vendor ID with validation
+                        st.success(f"✅ Product {pid} is available")
+
                 vendor_id = st.text_input("vendor_id (e.g., V050)", key="vendor_id_product_add")
+                # Vendor ID with validation
                 if vendor_id:
-                    if vendor_exists(vendor_id):
-                        st.success(f"✅ Vendor {vendor_id} exists")
+                    vid = vendor_id.strip().upper()
+                    if vendor_exists(vid):
+                        st.success(f"✅ Vendor {vid} exists")
                     else:
-                        st.error(f"❌ Vendor {vendor_id} not found")
+                        st.error(f"❌ Vendor {vid} not found")
+
             
             with col2:
                 # Category dropdown with add new option
@@ -134,11 +138,20 @@ if mode == "RAG Chatbot":
                 if category == "➕ Add New Category":
                     new_category_name = st.text_input("Enter new category name", key="new_category_input")
                     if new_category_name:
+                        new_category_name = new_category_name.strip()
                         if category_exists(new_category_name):
                             st.warning(f"⚠️ Category '{new_category_name}' already exists")
                         else:
                             st.success(f"✅ New category '{new_category_name}' will be created")
                         category = new_category_name
+
+                if "prev_category" not in st.session_state:
+                    st.session_state.prev_category = None
+
+                if category != st.session_state.prev_category:
+                    st.session_state.sub_category_add = "➕ Add New Sub-Category"
+                    st.session_state.prev_category = category
+
                 
                 # Subcategory dropdown (dynamically loaded based on category)
                 subcategories = get_subcategories_for_category(category) if category and category != "➕ Add New Category" else []
@@ -149,11 +162,15 @@ if mode == "RAG Chatbot":
                 if sub_category == "➕ Add New Sub-Category":
                     new_subcategory_name = st.text_input("Enter new sub-category name", key="new_subcategory_input")
                     if new_subcategory_name:
-                        if subcategory_exists(category, new_subcategory_name):
-                            st.warning(f"⚠️ Sub-category '{new_subcategory_name}' already exists in '{category}'")
+                        new_subcategory_name = new_subcategory_name.strip()
+                        if not category:
+                            st.warning("Please select a category first.")
                         else:
-                            st.success(f"✅ New sub-category '{new_subcategory_name}' will be created")
-                        sub_category = new_subcategory_name
+                            if subcategory_exists(category, new_subcategory_name):
+                                st.warning(f"⚠️ Sub-category '{new_subcategory_name}' already exists in '{category}'")
+                            else:
+                                st.success(f"✅ New sub-category '{new_subcategory_name}' will be created")
+                            sub_category = new_subcategory_name
                 
                 price_usd = st.number_input("price_usd", min_value=0.0, key="price_usd_add")
             
@@ -185,29 +202,37 @@ if mode == "RAG Chatbot":
                 st.rerun()
             
             if product_submitted:
-                if product_id and vendor_id and category and sub_category:
-                    if product_exists(product_id):
-                        st.error(f"❌ Product {product_id} already exists in the database.")
-                    elif not vendor_exists(vendor_id):
-                        st.error(f"❌ Vendor {vendor_id} does not exist. Please add this vendor first.")
+                pid = product_id.strip().upper() if product_id else ""
+                vid = vendor_id.strip().upper() if vendor_id else ""
+
+                if pid and vid and category and sub_category:
+                    if product_exists(pid):
+                        st.error(f"❌ Product {pid} already exists in the database.")
+                    elif not vendor_exists(vid):
+                        st.error(f"❌ Vendor {vid} does not exist. Please add this vendor first.")
                     else:
                         try:
                             result = add_product(
                                 date.isoformat(),
-                                product_id, vendor_id, category, sub_category,
+                                pid, vid, category, sub_category,
                                 price_usd, discount_rate, ad_spend_usd,
                                 views, orders, gross_revenue_usd, returns,
                                 rating, rating_count, stock_units, avg_fulfillment_days
                             )
-                            st.success(f"✅ Product {product_id} saved successfully!")
-                            out = f"✅ Product **{product_id}** has been saved to the database."
-                            st.session_state.rag_messages.append({"role": "assistant", "content": out})
-                            st.session_state.show_add_product_form = False
-                            st.rerun()
+
+                            if result.get("success"):
+                                st.success(result.get("message", f"✅ Product {pid} saved successfully!"))
+                                st.session_state.rag_messages.append({"role": "assistant", "content": f"✅ Product **{pid}** has been saved to the database."})
+                                st.session_state.show_add_product_form = False
+                                st.rerun()
+                            else:
+                                st.error(result.get("message", "❌ Failed to save product."))
+
                         except Exception as e:
                             st.error(f"❌ Error saving product: {str(e)}")
                 else:
                     st.warning("Please fill in all required fields: product_id, vendor_id, category, and sub_category")
+
     
     # === NORMAL RAG FLOW (only if not in form mode) ===
     if prompt and not st.session_state.show_add_vendor_form and not st.session_state.show_add_product_form:
