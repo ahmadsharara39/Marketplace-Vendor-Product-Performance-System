@@ -17,8 +17,20 @@ if not DATABASE_URL:
     except (ImportError, AttributeError, KeyError):
         pass
 
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is not set. Set it in .env locally or in Streamlit Cloud Secrets")
+def get_connection():
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        try:
+            import streamlit as st
+            db_url = st.secrets.get("DATABASE_URL")
+        except Exception:
+            db_url = None
+
+    if not db_url:
+        raise RuntimeError("DATABASE_URL is not set (env var or Streamlit secrets).")
+
+    return psycopg2.connect(db_url, sslmode="require")
+
 
 def get_connection():
     """Get a connection to Neon PostgreSQL"""

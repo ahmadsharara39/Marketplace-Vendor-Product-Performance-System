@@ -34,6 +34,18 @@ def init():
 
 def retrieve(query: str, k=TOP_K):
     init()
+    q_vec = _emb.encode([query], normalize_embeddings=True).astype("float32")
+    scores, idxs = _index.search(q_vec, k)
+
+    results = []
+    for score, idx in zip(scores[0], idxs[0]):
+        if idx < 0:
+            continue
+        c = _chunks[int(idx)].copy()
+        c["score"] = float(score)
+        results.append(c)
+    return results
+
 
 def answer(query: str):
     # retrieval
