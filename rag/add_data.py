@@ -4,7 +4,7 @@ Module for adding vendors and products to the Neon PostgreSQL database
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
-from db_config import insert_vendor, insert_product_raw, insert_marketplace_daily_raw, get_all_vendors
+from rag.db_config import insert_vendor, insert_product_raw, insert_marketplace_daily_raw, get_all_vendors
 
 
 ROOT = Path(__file__).resolve().parents[1]

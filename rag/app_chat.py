@@ -1,7 +1,7 @@
 import streamlit as st
-from rag_core import answer
-from add_data import add_vendor, add_product
-from db_config import get_all_vendors
+from rag.rag_core import answer
+from rag.add_data import add_vendor, add_product
+from rag.db_config import get_all_vendors
 import datetime
 
 st.set_page_config(page_title="Marketplace RAG Chatbot", layout="wide")

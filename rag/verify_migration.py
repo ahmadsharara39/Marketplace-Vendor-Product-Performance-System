@@ -1,5 +1,5 @@
 """Verify migration success"""
-from db_config import get_connection
+from rag.db_config import get_connection
 import pandas as pd
 from pathlib import Path
 

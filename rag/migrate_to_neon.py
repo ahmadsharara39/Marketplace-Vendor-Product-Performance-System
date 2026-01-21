@@ -3,7 +3,7 @@ Migration script to transfer data from CSV files to Neon PostgreSQL
 """
 import pandas as pd
 from pathlib import Path
-from db_config import (insert_vendor, insert_product_raw, insert_vendor_promotion, 
+from rag.db_config import (insert_vendor, insert_product_raw, insert_vendor_promotion, 
                        insert_discount_recommendation, get_connection)
 
 ROOT = Path(__file__).resolve().parents[1]
