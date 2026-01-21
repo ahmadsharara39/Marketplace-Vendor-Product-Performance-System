@@ -9,6 +9,12 @@ st.title("📊 Marketplace RAG Chatbot (Docs + AI Recommendations)")
 
 st.caption("Ask questions about vendors, categories, performance tables, and recommendations. Answers include sources.")
 
+# Initialize session state for form clearing
+if "vendor_form_submitted" not in st.session_state:
+    st.session_state.vendor_form_submitted = False
+if "product_form_submitted" not in st.session_state:
+    st.session_state.product_form_submitted = False
+
 # Sidebar for adding vendors/products
 with st.sidebar:
     st.header("➕ Add Data to Database")
@@ -18,21 +24,32 @@ with st.sidebar:
     with tab1:
         st.subheader("Add New Vendor")
         
-        with st.form("vendor_form", clear_on_submit=True):
-            vendor_id = st.text_input("Vendor ID (e.g., V050)", value="", placeholder="V050")
-            vendor_tier = st.selectbox("Vendor Tier", ["Bronze", "Silver", "Gold"])
-            vendor_region = st.selectbox("Vendor Region", ["Levant", "GCC", "Europe", "North Africa", "Asia"])
-            vendor_quality_score = st.slider("Quality Score", -2.0, 2.0, 0.0, 0.1)
+        with st.form("vendor_form"):
+            vendor_id = st.text_input("Vendor ID (e.g., V050)", placeholder="Enter Vendor ID", key="vendor_id_input")
+            vendor_tier = st.selectbox("Vendor Tier", ["Bronze", "Silver", "Gold"], key="vendor_tier_select")
+            vendor_region = st.selectbox("Vendor Region", ["Levant", "GCC", "Europe", "North Africa", "Asia"], key="vendor_region_select")
+            vendor_quality_score = st.slider("Quality Score", -2.0, 2.0, 0.0, 0.1, key="vendor_score_slider")
             
-            if st.form_submit_button("✓ Add Vendor to Database", use_container_width=True):
-                if vendor_id and len(vendor_id) > 1:
-                    result = add_vendor(vendor_id.upper(), vendor_tier, vendor_region, vendor_quality_score)
-                    if result["success"]:
-                        st.success(result["message"])
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.form_submit_button("✓ Add Vendor to Database", use_container_width=True):
+                    if vendor_id and len(vendor_id) > 1:
+                        result = add_vendor(vendor_id.upper(), vendor_tier, vendor_region, vendor_quality_score)
+                        if result["success"]:
+                            st.success(result["message"])
+                            st.session_state.vendor_form_submitted = True
+                            st.rerun()
+                        else:
+                            st.error(result["message"])
                     else:
-                        st.error(result["message"])
-                else:
-                    st.error("Please enter a valid Vendor ID")
+                        st.error("Please enter a valid Vendor ID")
+            with col2:
+                if st.form_submit_button("Clear Fields", use_container_width=True):
+                    st.session_state.vendor_id_input = ""
+                    st.session_state.vendor_tier_select = "Bronze"
+                    st.session_state.vendor_region_select = "Levant"
+                    st.session_state.vendor_score_slider = 0.0
+                    st.rerun()
     
     with tab2:
         st.subheader("Add New Product")
@@ -45,43 +62,59 @@ with st.sidebar:
             vendor_ids = []
             st.warning("Could not load vendors from database")
         
-        with st.form("product_form", clear_on_submit=True):
-            date = st.date_input("Date", value=datetime.date.today())
-            product_id = st.text_input("Product ID (e.g., P00100)", value="", placeholder="P00100")
+        with st.form("product_form"):
+            col_left, col_right = st.columns(2)
             
-            if vendor_ids:
-                vendor_id = st.selectbox("Select Vendor", vendor_ids)
-            else:
-                vendor_id = st.text_input("Vendor ID (e.g., V050)", value="", placeholder="V050")
+            with col_left:
+                date = st.date_input("Date", value=datetime.date.today(), key="product_date_input")
+                product_id = st.text_input("Product ID (e.g., P00100)", placeholder="Enter Product ID", key="product_id_input")
+                category = st.text_input("Category (e.g., Electronics)", placeholder="Enter Category", key="product_category_input")
+                sub_category = st.text_input("Sub-Category (e.g., Laptops)", placeholder="Enter Sub-Category", key="product_subcategory_input")
+                price_usd = st.number_input("Price (USD)", min_value=0.01, value=0.0, step=1.0, key="product_price_input")
+                discount_rate = st.slider("Discount Rate", 0.0, 1.0, 0.0, 0.01, key="product_discount_slider")
+                ad_spend_usd = st.number_input("Ad Spend (USD)", min_value=0.0, value=0.0, step=1.0, key="product_adspend_input")
             
-            category = st.text_input("Category (e.g., Electronics)", value="", placeholder="Electronics")
-            sub_category = st.text_input("Sub-Category (e.g., Laptops)", value="", placeholder="Laptops")
-            price_usd = st.number_input("Price (USD)", min_value=0.01, value=0.0, step=1.0)
-            discount_rate = st.slider("Discount Rate", 0.0, 1.0, 0.0, 0.01)
-            ad_spend_usd = st.number_input("Ad Spend (USD)", min_value=0.0, value=0.0, step=1.0)
-            views = st.number_input("Views", min_value=0, value=0, step=1)
-            orders = st.number_input("Orders", min_value=0, value=0, step=1)
-            returns = st.number_input("Returns", min_value=0, value=0, step=1)
-            rating = st.slider("Rating", 1.0, 5.0, 3.0, 0.1)
-            rating_count = st.number_input("Rating Count", min_value=0, value=0, step=1)
-            stock_units = st.number_input("Stock Units", min_value=0, value=0, step=1)
-            avg_fulfillment_days = st.number_input("Fulfillment Days", min_value=0.1, value=0.1, step=0.1)
-            gross_revenue_usd = st.number_input("Gross Revenue (USD)", min_value=0.0, value=0.0, step=1.0)
-            
-            if st.form_submit_button("✓ Add Product to Database", use_container_width=True):
-                if product_id and len(product_id) > 1 and vendor_id and len(vendor_id) > 1:
-                    result = add_product(
-                        str(date), product_id.upper(), vendor_id.upper(), category, sub_category,
-                        price_usd, discount_rate, ad_spend_usd, views, orders,
-                        gross_revenue_usd, returns, rating, rating_count,
-                        stock_units, avg_fulfillment_days
-                    )
-                    if result["success"]:
-                        st.success(result["message"])
-                    else:
-                        st.error(result["message"])
+            with col_right:
+                if vendor_ids:
+                    vendor_id = st.selectbox("Select Vendor", vendor_ids, key="product_vendor_select")
                 else:
-                    st.error("Please fill in all required fields")
+                    vendor_id = st.text_input("Vendor ID (e.g., V050)", placeholder="Enter Vendor ID", key="product_vendor_input")
+                
+                views = st.number_input("Views", min_value=0, value=0, step=1, key="product_views_input")
+                orders = st.number_input("Orders", min_value=0, value=0, step=1, key="product_orders_input")
+                returns = st.number_input("Returns", min_value=0, value=0, step=1, key="product_returns_input")
+                rating = st.slider("Rating", 1.0, 5.0, 3.0, 0.1, key="product_rating_slider")
+                rating_count = st.number_input("Rating Count", min_value=0, value=0, step=1, key="product_rating_count_input")
+                stock_units = st.number_input("Stock Units", min_value=0, value=0, step=1, key="product_stock_input")
+                avg_fulfillment_days = st.number_input("Fulfillment Days", min_value=0.1, value=0.1, step=0.1, key="product_fulfillment_input")
+                gross_revenue_usd = st.number_input("Gross Revenue (USD)", min_value=0.0, value=0.0, step=1.0, key="product_gross_revenue_input")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.form_submit_button("✓ Add Product to Database", use_container_width=True):
+                    if product_id and len(product_id) > 1 and vendor_id and len(vendor_id) > 1:
+                        result = add_product(
+                            str(date), product_id.upper(), vendor_id.upper(), category, sub_category,
+                            price_usd, discount_rate, ad_spend_usd, views, orders,
+                            gross_revenue_usd, returns, rating, rating_count,
+                            stock_units, avg_fulfillment_days
+                        )
+                        if result["success"]:
+                            st.success(result["message"])
+                            st.session_state.product_form_submitted = True
+                            st.rerun()
+                        else:
+                            st.error(result["message"])
+                    else:
+                        st.error("Please fill in all required fields")
+            
+            with col2:
+                if st.form_submit_button("Clear All Fields", use_container_width=True):
+                    # Clear all product form fields
+                    for key in list(st.session_state.keys()):
+                        if 'product_' in key:
+                            del st.session_state[key]
+                    st.rerun()
 
 
 st.divider()
