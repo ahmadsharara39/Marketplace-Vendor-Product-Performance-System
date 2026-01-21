@@ -142,7 +142,11 @@ if prompt:
             "add vendor", "add a vendor", "new vendor", "create vendor", 
             "want to add vendor", "i want to add vendor", "adding vendor",
             "how to add vendor", "add new vendor", "create new vendor",
-            "onboard vendor", "add vendor to marketplace"
+            "onboard vendor", "add vendor to marketplace", "vendor to the marketplace",
+            "to add a vendor", "to add vendor", "please consider", "vendor performance",
+            "vendor tier", "vendor region", "vendor quality", "vendor overview",
+            "current vendor", "35 vendors", "bronze", "silver", "gold",
+            "current vendor landscape", "vendor evaluation", "vendor addition"
         ]
         add_product_keywords = [
             "add product", "add a product", "new product", "create product", 
@@ -155,11 +159,11 @@ if prompt:
         is_add_vendor = any(keyword in prompt_lower for keyword in add_vendor_keywords)
         is_add_product = any(keyword in prompt_lower for keyword in add_product_keywords)
         
-        # Also check for common add-related phrases
-        general_add_keywords = ["to add a", "to add vendor", "to add product", "steps to add", "consider the following"]
-        is_general_add = any(phrase in prompt_lower for phrase in general_add_keywords)
+        # Also check if message contains "Current Vendor" or looks like RAG output being re-sent
+        looks_like_vendor_rag = "current vendor" in prompt_lower or "vendor overview" in prompt_lower
+        looks_like_add_request = "to add" in prompt_lower and ("vendor" in prompt_lower or "product" in prompt_lower)
         
-        if is_add_vendor or is_add_product or is_general_add:
+        if is_add_vendor or is_add_product or looks_like_vendor_rag or looks_like_add_request:
             st.markdown("""
 ✅ **Perfect! I'll help you add a new vendor or product to the marketplace database.**
 
