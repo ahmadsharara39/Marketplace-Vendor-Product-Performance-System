@@ -135,45 +135,62 @@ if prompt:
 
     with st.chat_message("assistant"):
         # Check if user is asking about adding vendor or product
-        prompt_lower = prompt.lower()
+        prompt_lower = prompt.lower().strip()
         
-        # Keywords to detect add vendor/product requests
-        add_vendor_keywords = ["add vendor", "add a vendor", "new vendor", "create vendor", "want to add vendor", "i want to add vendor"]
-        add_product_keywords = ["add product", "add a product", "new product", "create product", "want to add product", "i want to add product"]
+        # More comprehensive keywords to detect add vendor/product requests
+        add_vendor_keywords = [
+            "add vendor", "add a vendor", "new vendor", "create vendor", 
+            "want to add vendor", "i want to add vendor", "adding vendor",
+            "how to add vendor", "add new vendor", "create new vendor",
+            "onboard vendor", "add vendor to marketplace"
+        ]
+        add_product_keywords = [
+            "add product", "add a product", "new product", "create product", 
+            "want to add product", "i want to add product", "adding product",
+            "how to add product", "add new product", "create new product",
+            "onboard product", "add product to marketplace"
+        ]
         
+        # Check if any keyword matches (even partial)
         is_add_vendor = any(keyword in prompt_lower for keyword in add_vendor_keywords)
         is_add_product = any(keyword in prompt_lower for keyword in add_product_keywords)
         
-        if is_add_vendor or is_add_product:
+        # Also check for common add-related phrases
+        general_add_keywords = ["to add a", "to add vendor", "to add product", "steps to add", "consider the following"]
+        is_general_add = any(phrase in prompt_lower for phrase in general_add_keywords)
+        
+        if is_add_vendor or is_add_product or is_general_add:
             st.markdown("""
-✅ **Great! I can help you add a new vendor or product to the database.**
+✅ **Perfect! I'll help you add a new vendor or product to the marketplace database.**
 
 **👈 Look at the left sidebar** - you'll see the **"➕ Add Data to Database"** panel with two tabs:
 
-### 📝 Add Vendor Tab
-Fill in these **empty fields**:
-- **Vendor ID** - e.g., V050
-- **Vendor Tier** - Select: Bronze, Silver, or Gold
-- **Vendor Region** - Select: Levant, GCC, Europe, North Africa, or Asia
-- **Quality Score** - Use the slider (-2.0 to 2.0)
-- Then click **"✓ Add Vendor to Database"**
+### 📝 **Add Vendor Tab** - Empty fields to fill in:
+- **Vendor ID** (e.g., V050)
+- **Vendor Tier** (Bronze, Silver, or Gold)
+- **Vendor Region** (Levant, GCC, Europe, North Africa, or Asia)
+- **Quality Score** (slider from -2.0 to 2.0)
+- Click **"✓ Add Vendor to Database"** to save
 
-### 📦 Add Product Tab
-Fill in these **empty fields**:
-- **Date** - Select today's date
-- **Product ID** - e.g., P00100
-- **Vendor** - Select from existing vendors
-- **Category & Sub-Category** - e.g., Electronics, Laptops
-- **Price, Discount Rate, Ad Spend** - Enter the values
-- **Views, Orders, Returns** - Enter metrics
-- **Rating & Rating Count** - Enter ratings
-- **Stock Units, Fulfillment Days, Revenue** - Enter the values
-- Then click **"✓ Add Product to Database"**
+### 📦 **Add Product Tab** - Empty fields to fill in:
+- **Date** (today's date or any date)
+- **Product ID** (e.g., P00100)
+- **Vendor** (select from dropdown)
+- **Category** (e.g., Electronics)
+- **Sub-Category** (e.g., Laptops)
+- **Price** (in USD)
+- **Discount Rate** (0-100%)
+- **Ad Spend** (in USD)
+- **Views, Orders, Returns** (metrics)
+- **Rating** (1-5 stars)
+- **Rating Count** (number of ratings)
+- **Stock Units** (inventory)
+- **Fulfillment Days** (delivery time)
+- **Gross Revenue** (in USD)
+- Click **"✓ Add Product to Database"** to save
 
-**All fields start completely empty - just fill in your information and click submit!**
+**All fields are completely empty and ready for your data. Just fill in and submit!**
             """)
-            # Add helpful message to session
-            st.session_state.messages[-1] = {"role": "assistant", "content": "Added vendor/product instructions"}
         else:
             with st.spinner("Retrieving and answering..."):
                 out, contexts = answer(prompt)
