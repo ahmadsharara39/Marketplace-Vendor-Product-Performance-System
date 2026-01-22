@@ -289,6 +289,7 @@ if mode == "RAG Chatbot":
 
                     except Exception as e:
                         st.error(f"❌ Error saving product: {str(e)}")
+    st.stop()
 
 
 
