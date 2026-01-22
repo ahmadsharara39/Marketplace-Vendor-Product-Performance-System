@@ -72,15 +72,33 @@ Sources:
 Write a concise, management-friendly answer with bullet points and citations.
 """
 
-    # LLM (OpenAI)
+    # LLM (OpenAI) with safe fallback
     client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-    resp = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        temperature=0.2,
-    )
 
-    return resp.choices[0].message.content, contexts
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            temperature=0.2,
+        )
+        return resp.choices[0].message.content, contexts
+
+    except RateLimitError:
+        # ✅ App should not crash — return a helpful message + sources
+        fallback = (
+            "I’m currently rate-limited and can’t generate an OpenAI answer right now.\n\n"
+            "Here are the most relevant sources I found so you can still inspect them:\n"
+            + "\n".join([f"- [{i+1}] {c['source']} (score={c['score']:.3f})" for i, c in enumerate(contexts)])
+        )
+        return fallback, contexts
+
+    except Exception as e:
+        fallback = (
+            f"An error occurred while generating the answer: {type(e).__name__}.\n\n"
+            "Here are the most relevant sources I found:\n"
+            + "\n".join([f"- [{i+1}] {c['source']} (score={c['score']:.3f})" for i, c in enumerate(contexts)])
+        )
+        return fallback, contexts

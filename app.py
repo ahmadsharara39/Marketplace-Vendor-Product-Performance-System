@@ -17,6 +17,7 @@ if mode == "RAG Chatbot":
     # Import only when needed (keeps dashboard fast)
     from rag.rag_core import answer
     from rag.add_data import add_vendor, add_product
+    from rag.db_config import get_last_vendor, get_last_product_raw
     from rag.db_config import get_all_categories, get_subcategories_for_category, vendor_exists, product_exists, category_exists, subcategory_exists
 
     if "rag_messages" not in st.session_state:
@@ -39,11 +40,42 @@ if mode == "RAG Chatbot":
         with st.chat_message("user"):
             st.markdown(prompt)
 
+        # ✅ DB shortcut: "last added vendor/product" (NO OpenAI)
+        pl = prompt.lower().strip()
+
+        if "last" in pl and "vendor" in pl:
+            v = get_last_vendor()
+            out = (
+                f"**Last added vendor:** **{v['vendor_id']}**  \n"
+                f"- Tier: {v['vendor_tier']}  \n"
+                f"- Region: {v['vendor_region']}  \n"
+                f"- Quality score: {v['vendor_quality_score']}  \n"
+                f"- Created at: {v['created_at']}"
+            ) if v else "No vendors found in the database yet."
+            st.session_state.rag_messages.append({"role": "assistant", "content": out})
+            with st.chat_message("assistant"):
+                st.markdown(out)
+            st.stop()
+
+        if "last" in pl and "product" in pl:
+            p = get_last_product_raw()
+            out = (
+                f"**Last added product:** **{p['product_id']}**  \n"
+                f"- Vendor: {p['vendor_id']}  \n"
+                f"- Category: {p['category']} > {p['sub_category']}  \n"
+                f"- Price: ${p['price_usd']}  \n"
+                f"- Created at: {p['created_at']}"
+            ) if p else "No products found in the database yet."
+            st.session_state.rag_messages.append({"role": "assistant", "content": out})
+            with st.chat_message("assistant"):
+                st.markdown(out)
+            st.stop()
+
+        # ✅ Detect intent ONCE
+        intent_out = detect_intent(prompt)
+        intent = intent_out.get("intent", "qa")
+
         with st.chat_message("assistant"):
-            intent_out = detect_intent(prompt)
-            intent = intent_out.get("intent", "qa")
-
-
             if intent == "add_vendor":
                 st.session_state.show_add_vendor_form = True
                 st.session_state.show_add_product_form = False
@@ -54,6 +86,19 @@ if mode == "RAG Chatbot":
                 st.markdown("### ➕ Add Product\nUse the form below to add a new product.")
             elif intent == "ambiguous":
                 st.markdown("Do you want to add a **vendor** or a **product**?")
+            else:
+                # ✅ QA -> run RAG immediately here
+                with st.spinner("Retrieving and answering..."):
+                    out, contexts = answer(prompt)
+                    st.markdown(out)
+
+                    with st.expander("Sources used"):
+                        for i, c in enumerate(contexts or [], start=1):
+                            st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
+                            st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
+
+                    st.session_state.rag_messages.append({"role": "assistant", "content": out})
+
 
     
     # === FORMS OUTSIDE CHAT MESSAGE (stable rendering) ===
@@ -245,27 +290,6 @@ if mode == "RAG Chatbot":
                     except Exception as e:
                         st.error(f"❌ Error saving product: {str(e)}")
 
-    
-    # === NORMAL RAG FLOW (only if not in form mode) ===
-    if prompt and not st.session_state.show_add_vendor_form and not st.session_state.show_add_product_form:
-        with st.chat_message("assistant"):
-            intent_out = detect_intent(prompt)
-            intent = intent_out.get("intent", "qa")
-
-            # Skip RAG if it's an add request
-            if intent == "qa":
-                with st.spinner("Retrieving and answering..."):
-                    out, contexts = answer(prompt)
-                    st.markdown(out)
-
-                    with st.expander("Sources used"):
-                        for i, c in enumerate(contexts or [], start=1):
-                            st.write(f"[{i}] {c['source']} (score={c['score']:.3f})")
-                            st.code(c["text"][:800] + ("..." if len(c["text"]) > 800 else ""))
-
-                    st.session_state.rag_messages.append({"role": "assistant", "content": out})
-
-    st.stop()  # Prevent dashboard code from running under chatbot mode
 
 
 @st.cache_data
